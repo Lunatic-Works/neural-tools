@@ -10,18 +10,23 @@ model_filename = './models/neural_style/starry_night.onnx'
 in_filenames = [
     './in.png',
 ]
-out_suffix = '_style'
+out_suffix = '_starry'
 
 piece_inner_size = 240
 pad_size = 120
 batch_size = 12
 
 swap_rb = False
+noise = 0
 output_8_bit = True
 
 
 def convert_img(sess, in_filename, out_filename):
-    img = read_img(in_filename, swap_rb=swap_rb, signed=False, scale=255)
+    img = read_img(in_filename,
+                   swap_rb=swap_rb,
+                   signed=False,
+                   scale=255,
+                   noise=noise)
 
     # Use the whole image to calibrate InstanceNorm
     piece_outer_size = piece_inner_size + pad_size * 2

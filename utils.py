@@ -1,5 +1,6 @@
 import os
 import shutil
+from glob import glob
 from math import ceil, floor
 
 import cv2
@@ -130,6 +131,7 @@ def read_img(filename,
              gamma=1,
              signed=True,
              scale=None,
+             noise=0,
              return_alpha=False):
     # Use cv2 to support 16 bit image
     img = cv2.imread(filename, cv2.IMREAD_UNCHANGED)
@@ -150,8 +152,9 @@ def read_img(filename,
         img = np.repeat(img[:, :, None], 3, axis=2)
 
     if swap_rb:
+        assert img.ndim == 3
         # BGR -> RGB
-        img = img[:, :, [2, 1, 0]]
+        img = img[:, :, ::-1]
 
     img **= gamma
 
@@ -163,6 +166,10 @@ def read_img(filename,
         img *= scale
         if alpha is not None:
             alpha *= scale
+
+    if noise:
+        rng = np.random.default_rng()
+        img += rng.normal(scale=noise, size=img.shape)
 
     if return_alpha:
         return img, alpha
@@ -191,7 +198,7 @@ def write_img(filename,
 
     if swap_rb:
         # RGB -> BGR
-        img = img[:, :, [2, 1, 0]]
+        img = img[:, :, ::-1]
 
     if output_gray:
         img = img.mean(axis=2, keepdims=True)
@@ -215,7 +222,15 @@ def do_imgs(fun,
             out_suffix,
             out_extname=None,
             tmp_filename=None):
-    sess = rt.InferenceSession(model_filename)
+    if model_filename:
+        sess = rt.InferenceSession(model_filename)
+    else:
+        sess = None
+
+    if type(in_filenames) == str:
+        in_filenames = [in_filenames]
+
+    in_filenames = sum([glob(x) for x in in_filenames], [])
 
     for in_filename in in_filenames:
         print(in_filename)
