@@ -81,14 +81,14 @@ def convert_img(sess, in_filename, out_filename):
                                                  floor_even(alpha.shape))
             else:
                 alpha = skimage.transform.resize(
-                    alpha, [alpha.shape[0] * 2, alpha.shape[1] * 2])
+                    alpha, (alpha.shape[0] * 2, alpha.shape[1] * 2))
     else:
         img = skimage.transform.resize(img,
-                                       [img.shape[0] // 2, img.shape[1] // 2])
+                                       (img.shape[0] // 2, img.shape[1] // 2))
         if alpha is not None:
             if run_alpha:
                 alpha = skimage.transform.resize(
-                    alpha, [alpha.shape[0] // 2, alpha.shape[1] // 2])
+                    alpha, (alpha.shape[0] // 2, alpha.shape[1] // 2))
             else:
                 alpha = skimage.transform.resize(alpha,
                                                  floor_even(alpha.shape))
@@ -104,10 +104,10 @@ def convert_img(sess, in_filename, out_filename):
 
     if upscale and downscale:
         img = skimage.transform.resize(img,
-                                       [img.shape[0] // 2, img.shape[1] // 2])
+                                       (img.shape[0] // 2, img.shape[1] // 2))
         if run_alpha:
             alpha = skimage.transform.resize(
-                alpha, [alpha.shape[0] // 2, alpha.shape[1] // 2])
+                alpha, (alpha.shape[0] // 2, alpha.shape[1] // 2))
 
     if trim_alpha and alpha is not None:
         img, alpha = untrim_img(img, alpha, original_shape,

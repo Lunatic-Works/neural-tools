@@ -1,41 +1,33 @@
 #!/usr/bin/env python3
 
 import numpy as np
-import skimage.transform
 
 from utils import (do_imgs, get_batch, get_pieces, merge_img, read_img,
                    write_img)
 
-model_filename = './models/cartoongan/shinkai.onnx'
+model_filename = './models/cartoonize_2/danbooru.onnx'
 in_filenames = [
     './in.png',
 ]
-out_suffix = '_shinkai'
+out_suffix = '_danbooru'
 
-piece_inner_size = 240
-pad_size = 60
-batch_size = 24
+piece_inner_size = 432
+pad_size = 40
+batch_size = 32
 
-swap_rb = False
+swap_rb = True
 noise = 0
-output_8_bit = True
+output_8_bit = False
 
 
 def convert_img(sess, in_filename, out_filename):
     img = read_img(in_filename, swap_rb=swap_rb, signed=True, noise=noise)
 
-    # Use the whole image to calibrate InstanceNorm
-    piece_outer_size = piece_inner_size + pad_size * 2
-    img_small = skimage.transform.resize(img, (piece_outer_size, ) * 2)
-    img_small = img_small[None, :, :, :].transpose(0, 3, 1, 2)
-
     pieces, max_row_col, pads = get_pieces(img, piece_inner_size, pad_size)
 
     out_pieces = []
     for batch in get_batch(pieces, batch_size):
-        batch = np.concatenate([img_small, batch])
         out_batch = sess.run(None, {'in': batch})[0]
-        out_batch = out_batch[1:]
         out_batch = out_batch.transpose(0, 2, 3, 1)
         out_pieces.append(out_batch)
     out_pieces = np.concatenate(out_pieces)

@@ -6,27 +6,23 @@ import skimage.transform
 from utils import (do_imgs, get_batch, get_pieces, merge_img, read_img,
                    write_img)
 
-model_filename = './models/neural_style/starry_night.onnx'
+model_filename = './models/cartoonize/shinkai.onnx'
 in_filenames = [
     './in.png',
 ]
-out_suffix = '_starry'
+out_suffix = '_shinkai'
 
 piece_inner_size = 240
-pad_size = 120
-batch_size = 12
+pad_size = 60
+batch_size = 24
 
-swap_rb = False
+swap_rb = True
 noise = 0
-output_8_bit = True
+output_8_bit = False
 
 
 def convert_img(sess, in_filename, out_filename):
-    img = read_img(in_filename,
-                   swap_rb=swap_rb,
-                   signed=False,
-                   scale=255,
-                   noise=noise)
+    img = read_img(in_filename, swap_rb=swap_rb, signed=True, noise=noise)
 
     # Use the whole image to calibrate InstanceNorm
     piece_outer_size = piece_inner_size + pad_size * 2
@@ -50,8 +46,7 @@ def convert_img(sess, in_filename, out_filename):
     write_img(out_filename,
               out_img,
               swap_rb=swap_rb,
-              signed=False,
-              scale=255,
+              signed=True,
               output_8_bit=output_8_bit)
 
 

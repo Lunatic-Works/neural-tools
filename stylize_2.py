@@ -5,7 +5,7 @@ import skimage.transform
 
 from utils import do_imgs, read_img, write_img
 
-model_filename = './models/neural_style_2/cezanne.onnx'
+model_filename = './models/stylize_2/cezanne.onnx'
 in_filenames = [
     './in.png',
 ]
@@ -15,7 +15,7 @@ size = 1024
 
 swap_rb = True
 noise = 0
-output_8_bit = True
+output_8_bit = False
 
 
 def convert_img(sess, in_filename, out_filename):

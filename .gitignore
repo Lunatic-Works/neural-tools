@@ -1,4 +1,4 @@
 *.pyc
 /models/
+/zi2zi/out/
 __pycache__
-out*

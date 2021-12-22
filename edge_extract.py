@@ -1,28 +1,25 @@
 #!/usr/bin/env python3
 
 import skimage.color
-from skimage.exposure import equalize_adapthist
-from skimage.filters import difference_of_gaussians
+from skimage.feature import canny
 
 from utils import do_imgs, read_img, write_img
 
 in_filenames = [
     './in.png',
 ]
-out_suffix = '_hf'
+out_suffix = '_edge'
 
-radius = 10
-output_8_bit = True
+sigma = 2
+output_8_bit = False
 
 
 def convert_img(_, in_filename, out_filename):
     img = read_img(in_filename, swap_rb=True, signed=False)
     img = skimage.color.rgb2gray(img)
 
-    img = equalize_adapthist(img, kernel_size=radius)
-
-    img = difference_of_gaussians(img, 0, radius)
-    img = (img + 1) / 2
+    img = canny(img, sigma=sigma).astype(img.dtype)
+    img = 1 - img
 
     write_img(out_filename, img, signed=False, output_8_bit=output_8_bit)
 

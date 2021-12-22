@@ -31,9 +31,9 @@ def convert_img(sess, in_filename, out_filename):
     img = img[trim_t:trim_b, trim_l:trim_r, :]
     alpha = alpha[trim_t:trim_b, trim_l:trim_r, :]
 
-    img = skimage.transform.resize(img, [img.shape[0] // 2, img.shape[1] // 2])
+    img = skimage.transform.resize(img, (img.shape[0] // 2, img.shape[1] // 2))
     alpha = skimage.transform.resize(
-        alpha, [alpha.shape[0] // 2, alpha.shape[1] // 2])
+        alpha, (alpha.shape[0] // 2, alpha.shape[1] // 2))
     img_black = img * alpha
     img_white = img * alpha + 1 - alpha
 
@@ -53,7 +53,4 @@ def convert_img(sess, in_filename, out_filename):
 
 
 if __name__ == '__main__':
-    do_imgs(convert_img,
-            model_filename,
-            in_filenames,
-            out_suffix)
+    do_imgs(convert_img, model_filename, in_filenames, out_suffix)

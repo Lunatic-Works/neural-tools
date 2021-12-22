@@ -43,7 +43,7 @@ def trim_img(img, alpha, eps):
 
 def untrim_img(img, alpha, original_shape, trims):
     trim_t, trim_b, trim_l, trim_r = trims
-    new_img = np.zeros([original_shape[0], original_shape[1], 3])
+    new_img = np.zeros((original_shape[0], original_shape[1], 3))
     new_alpha = np.zeros(original_shape)
     new_img[trim_t:trim_b, trim_l:trim_r, :] = img
     new_alpha[trim_t:trim_b, trim_l:trim_r] = alpha
@@ -223,7 +223,9 @@ def do_imgs(fun,
             out_extname=None,
             tmp_filename=None):
     if model_filename:
-        sess = rt.InferenceSession(model_filename)
+        sess = rt.InferenceSession(
+            model_filename,
+            providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
     else:
         sess = None
 
@@ -231,6 +233,8 @@ def do_imgs(fun,
         in_filenames = [in_filenames]
 
     in_filenames = sum([glob(x) for x in in_filenames], [])
+    if not in_filenames:
+        print('No in_filenames')
 
     for in_filename in in_filenames:
         print(in_filename)
