@@ -53,7 +53,8 @@ def convert_img(sess, in_filename, out_filename, eps=1e-15):
         weight = ((img_new - box_filter(img_new, 3))**2).sum(axis=2)
         weight = maximum_filter(weight, 3)
         knapsack = value / (weight + eps)
-        threshold = np.quantile(knapsack, 1 - erase_ratio)
+        threshold = np.quantile(knapsack,
+                                1 - (i + 1) / (max_iter - 1) * erase_ratio)
         knapsack /= (threshold + eps)
         mask = np.random.rand(height, width) < knapsack
 
