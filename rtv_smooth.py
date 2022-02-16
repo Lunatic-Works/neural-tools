@@ -5,11 +5,11 @@ from skimage.color import rgb2xyz
 from skimage.filters import gaussian
 
 
-# In-place
 def cross_sum(a):
     a_pad = np.pad(a, ((1, 1), (1, 1), (0, 0)))
-    a += (a_pad[2:, 1:-1] + a_pad[:-2, 1:-1] + a_pad[1:-1, 2:] +
-          a_pad[1:-1, :-2])
+    out = (a_pad[2:, 1:-1] + a_pad[:-2, 1:-1] + a_pad[1:-1, 2:] +
+           a_pad[1:-1, :-2])
+    return out
 
 
 def tv_smooth(img, mask, max_iter=10**3, tol=1e-6, eps=1e-15):
@@ -20,8 +20,8 @@ def tv_smooth(img, mask, max_iter=10**3, tol=1e-6, eps=1e-15):
     mask_inv = 1 - mask
     for _ in range(max_iter):
         img_new = mask_inv * img_old
-        cross_sum(img_new)
-        cross_sum(mask_inv)
+        img_new = cross_sum(img_new)
+        mask_inv = cross_sum(mask_inv)
         img_new /= mask_inv + eps
         img_new = mask * img_new + (1 - mask) * img
 
@@ -76,23 +76,29 @@ def solve_img(img, uwx, uwy, lam=0.01):
     A = dia_array(([d, s, n, e, w], [0, -1, 1, -W, W]), shape=(size, size))
     A = A.tocsr()
 
+    out = np.empty_like(img)
     for i in range(C):
         b = img[:, :, i].flatten()
         x, info = bicgstab(A, b, tol=1e-2, atol=1e-2, maxiter=10**3)
         if info != 0:
             print('info', info)
-        img[:, :, i] = x.reshape((H, W))
+        out[:, :, i] = x.reshape((H, W))
 
-    return img
+    return out
 
 
-def rtv_smooth(img, sigma_init=3, sigma_decay=0.5, sigma_min=0.5, max_iter=4):
-    x = img
-    sigma = sigma_init
+def rtv_smooth(img, sigma=3, max_iter=10, tol=1e-4):
+    img_old = img
     for i in range(max_iter):
         print('rtv_smooth', i)
-        uwx, uwy = compute_texture_weights(x, sigma)
-        x = solve_img(img, uwx, uwy)
-        sigma *= sigma_decay
-        sigma = max(sigma, sigma_min)
-    return x
+
+        uwx, uwy = compute_texture_weights(img_old, sigma)
+        img_new = solve_img(img, uwx, uwy)
+
+        norm = ((img_new - img_old)**2).mean()
+        if norm < tol:
+            break
+
+        img_old = img_new
+
+    return img_new

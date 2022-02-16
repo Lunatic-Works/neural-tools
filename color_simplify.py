@@ -2,7 +2,6 @@
 
 import numpy as np
 import skimage.transform
-from scipy.ndimage import maximum_filter
 
 from guided_filter import box_filter
 from rtv_smooth import rtv_smooth, tv_smooth
@@ -14,7 +13,7 @@ in_filenames = [
 out_suffix = '_simplify'
 
 scale = 0.25
-erase_ratio = 0.1
+erase_ratio = 0.5
 max_iter = 5
 output_8_bit = False
 
@@ -49,9 +48,7 @@ def convert_img(sess, in_filename, out_filename, eps=1e-15):
             break
 
         value = ((img_new - img)**2).sum(axis=2)
-        value = maximum_filter(value, 3)
         weight = ((img_new - box_filter(img_new, 3))**2).sum(axis=2)
-        weight = maximum_filter(weight, 3)
         knapsack = value / (weight + eps)
         threshold = np.quantile(knapsack,
                                 1 - (i + 1) / (max_iter - 1) * erase_ratio)
