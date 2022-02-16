@@ -134,7 +134,8 @@ def read_img(filename,
              noise=0,
              return_alpha=False):
     # Use cv2 to support 16 bit image
-    img = cv2.imread(filename, cv2.IMREAD_UNCHANGED)
+    img = np.fromfile(filename, dtype=np.uint8)
+    img = cv2.imdecode(img, cv2.IMREAD_UNCHANGED)
     img = skimage.img_as_float32(img)
 
     alpha = None
@@ -197,6 +198,7 @@ def write_img(filename,
     img = np.clip(img, 0, 1)
 
     if swap_rb:
+        assert img.ndim == 3
         # RGB -> BGR
         img = img[:, :, ::-1]
 
@@ -204,6 +206,7 @@ def write_img(filename,
         img = img.mean(axis=2, keepdims=True)
 
     if alpha is not None:
+        assert img.ndim == 3
         if alpha.ndim == 2:
             alpha = alpha[:, :, None]
         img = np.concatenate([img, alpha], axis=2)
@@ -213,7 +216,9 @@ def write_img(filename,
     else:
         img = skimage.img_as_uint(img)
 
-    cv2.imwrite(filename, img)
+    ret, img = cv2.imencode(os.path.splitext(filename)[1], img)
+    assert ret is True
+    img.tofile(filename)
 
 
 def do_imgs(fun,

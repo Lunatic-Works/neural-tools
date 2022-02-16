@@ -29,20 +29,22 @@ def convert_img(sess, in_filename, out_filename):
     trim_b = trim_t + floor_even(trim_b - trim_t)
     trim_r = trim_l + floor_even(trim_r - trim_l)
     img = img[trim_t:trim_b, trim_l:trim_r, :]
-    alpha = alpha[trim_t:trim_b, trim_l:trim_r, :]
+    alpha = alpha[trim_t:trim_b, trim_l:trim_r]
 
     img = skimage.transform.resize(img, (img.shape[0] // 2, img.shape[1] // 2))
     alpha = skimage.transform.resize(
         alpha, (alpha.shape[0] // 2, alpha.shape[1] // 2))
+    alpha = alpha[:, :, None]
     img_black = img * alpha
     img_white = img * alpha + 1 - alpha
 
     img_black_out = run_img(sess, img_black)
     img_white_out = run_img(sess, img_white)
-    alpha_out = (1 + img_black_out - img_white_out).mean(axis=2, keepdims=True)
+    alpha_out = (1 + img_black_out - img_white_out).mean(axis=2)
     alpha_out = alpha_out * (1 + alpha_pad * 2) - alpha_pad
     alpha_out = np.clip(alpha_out, 0, 1)
-    img_out = img_black_out * (1 + trim_eps) / (alpha_out + trim_eps)
+    img_out = (img_black_out * (1 + trim_eps) /
+               (alpha_out[:, :, None] + trim_eps))
     img_out = np.clip(img_out, 0, 1)
 
     img, alpha = untrim_img(img_out, alpha_out, original_shape,

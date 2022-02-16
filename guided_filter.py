@@ -13,24 +13,30 @@ out_suffix = '_gf'
 output_8_bit = False
 
 
-def box_filter(x, r):
-    return np.stack([uniform_filter(x[:, :, i], r) for i in range(x.shape[2])],
-                    axis=2)
+def box_filter(x, d):
+    if x.ndim == 2:
+        return uniform_filter(x, d)
+
+    assert x.ndim == 3
+    out = np.empty_like(x)
+    for i in range(x.shape[2]):
+        uniform_filter(x[:, :, i], d, out[:, :, i])
+    return out
 
 
-def guided_filter(x, y, r, eps):
+def guided_filter(x, y, d, eps):
     assert x.shape == y.shape
 
-    mean_x = box_filter(x, r)
-    mean_y = box_filter(y, r)
-    cov_xy = box_filter(x * y, r) - mean_x * mean_y
-    var_x = box_filter(x * x, r) - mean_x * mean_x
+    mean_x = box_filter(x, d)
+    mean_y = box_filter(y, d)
+    cov_xy = box_filter(x * y, d) - mean_x * mean_y
+    var_x = box_filter(x * x, d) - mean_x**2
 
     A = cov_xy / (var_x + eps)
     b = mean_y - A * mean_x
 
-    mean_A = box_filter(A, r)
-    mean_b = box_filter(b, r)
+    mean_A = box_filter(A, d)
+    mean_b = box_filter(b, d)
 
     output = mean_A * x + mean_b
     return output
