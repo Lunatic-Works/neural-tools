@@ -7,8 +7,7 @@ from skimage.filters import gaussian
 
 def cross_sum(a):
     a_pad = np.pad(a, ((1, 1), (1, 1), (0, 0)))
-    out = (a_pad[2:, 1:-1] + a_pad[:-2, 1:-1] + a_pad[1:-1, 2:] +
-           a_pad[1:-1, :-2])
+    out = a_pad[2:, 1:-1] + a_pad[:-2, 1:-1] + a_pad[1:-1, 2:] + a_pad[1:-1, :-2]
     return out
 
 
@@ -25,7 +24,7 @@ def tv_smooth(img, mask, max_iter=10**3, tol=1e-6, eps=1e-15):
         img_new /= mask_inv + eps
         img_new = mask * img_new + (1 - mask) * img
 
-        norm = ((img_new - img_old)**2).mean()
+        norm = ((img_new - img_old) ** 2).mean()
         if norm < tol:
             break
 
@@ -68,10 +67,10 @@ def solve_img(img, uwx, uwy, lam=0.01):
 
     e = np.pad(uwx, ((0, 1), (0, 0)))
     e = -lam * e.flatten()
-    w = np.pad(e[:-W], ((W, 0), ))
+    w = np.pad(e[:-W], ((W, 0),))
     s = np.pad(uwy, ((0, 0), (0, 1)))
     s = -lam * s.flatten()
-    n = np.pad(s[:-1], ((1, 0), ))
+    n = np.pad(s[:-1], ((1, 0),))
     d = 1 - (e + w + s + n)
     A = dia_array(([d, s, n, e, w], [0, -1, 1, -W, W]), shape=(size, size))
     A = A.tocsr()
@@ -81,7 +80,7 @@ def solve_img(img, uwx, uwy, lam=0.01):
         b = img[:, :, i].flatten()
         x, info = bicgstab(A, b, tol=1e-2, atol=1e-2, maxiter=10**3)
         if info != 0:
-            print('info', info)
+            print("info", info)
         out[:, :, i] = x.reshape((H, W))
 
     return out
@@ -90,12 +89,12 @@ def solve_img(img, uwx, uwy, lam=0.01):
 def rtv_smooth(img, sigma=3, max_iter=10, tol=1e-4):
     img_old = img
     for i in range(max_iter):
-        print('rtv_smooth', i)
+        print("rtv_smooth", i)
 
         uwx, uwy = compute_texture_weights(img_old, sigma)
         img_new = solve_img(img, uwx, uwy)
 
-        norm = ((img_new - img_old)**2).mean()
+        norm = ((img_new - img_old) ** 2).mean()
         if norm < tol:
             break
 

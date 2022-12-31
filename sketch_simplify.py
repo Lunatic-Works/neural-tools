@@ -3,14 +3,13 @@
 import numpy as np
 import skimage.color
 
-from utils import (do_imgs, get_batch, get_pieces, merge_img, read_img,
-                   write_img)
+from utils import do_imgs, get_batch, get_pieces, merge_img, read_img, write_img
 
-model_filename = './models/sketch_simplify/sketch_gan.onnx'
+model_filename = "./models/sketch_simplify/sketch_gan.onnx"
 in_filenames = [
-    './in.png',
+    "./in.png",
 ]
-out_suffix = '_simplify'
+out_suffix = "_simplify"
 
 piece_inner_size = 144
 pad_size = 24
@@ -30,20 +29,21 @@ def convert_img(sess, in_filename, out_filename):
 
     out_pieces = []
     for batch in get_batch(pieces, batch_size):
-        out_batch = sess.run(None, {'in': batch})[0]
+        out_batch = sess.run(None, {"in": batch})[0]
         out_batch = out_batch.transpose(0, 2, 3, 1)
         out_pieces.append(out_batch)
     out_pieces = np.concatenate(out_pieces)
 
-    out_img = merge_img(out_pieces, piece_inner_size, pad_size, max_row_col,
-                        pads)
+    out_img = merge_img(out_pieces, piece_inner_size, pad_size, max_row_col, pads)
 
     write_img(out_filename, out_img, signed=False, output_8_bit=output_8_bit)
 
 
-if __name__ == '__main__':
-    do_imgs(convert_img,
-            model_filename,
-            in_filenames,
-            out_suffix,
-            out_extname=None if output_8_bit else '.png')
+if __name__ == "__main__":
+    do_imgs(
+        convert_img,
+        model_filename,
+        in_filenames,
+        out_suffix,
+        out_extname=None if output_8_bit else ".png",
+    )

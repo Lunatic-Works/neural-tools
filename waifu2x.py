@@ -3,14 +3,23 @@
 import numpy as np
 import skimage.transform
 
-from utils import (do_imgs, floor_even, get_batch, get_pieces, merge_img,
-                   read_img, trim_img, untrim_img, write_img)
+from utils import (
+    do_imgs,
+    floor_even,
+    get_batch,
+    get_pieces,
+    merge_img,
+    read_img,
+    trim_img,
+    untrim_img,
+    write_img,
+)
 
-model_filename = './models/waifu2x/anime/noise1_scale2x.onnx'
+model_filename = "./models/waifu2x/anime/noise1_scale2x.onnx"
 in_filenames = [
-    './in.png',
+    "./in.png",
 ]
-out_suffix = '_waifu2x'
+out_suffix = "_waifu2x"
 
 piece_inner_size = 36
 pad_size = 12
@@ -37,13 +46,14 @@ def run_img(sess, img):
 
     out_pieces = []
     for batch in get_batch(pieces, batch_size):
-        out_batch = sess.run(None, {'in': batch})[0]
+        out_batch = sess.run(None, {"in": batch})[0]
         out_batch = out_batch.transpose(0, 2, 3, 1)
         out_pieces.append(out_batch)
     out_pieces = np.concatenate(out_pieces)
 
-    out_img = merge_img(out_pieces, piece_inner_size, pad_size, max_row_col,
-                        pads, (up_scale, up_shift))
+    out_img = merge_img(
+        out_pieces, piece_inner_size, pad_size, max_row_col, pads, (up_scale, up_shift)
+    )
     out_img = np.clip(out_img, 0, 1)
 
     return out_img
@@ -51,14 +61,12 @@ def run_img(sess, img):
 
 def convert_img(sess, in_filename, out_filename):
     # Network input is BGR
-    img, alpha = read_img(in_filename,
-                          swap_rb=False,
-                          signed=False,
-                          return_alpha=True)
+    img, alpha = read_img(in_filename, swap_rb=False, signed=False, return_alpha=True)
 
     if trim_alpha and alpha is not None:
-        original_shape, (trim_t, trim_b, trim_l,
-                         trim_r) = trim_img(img, alpha, trim_eps)
+        original_shape, (trim_t, trim_b, trim_l, trim_r) = trim_img(
+            img, alpha, trim_eps
+        )
 
         if not (upscale and not downscale):
             trim_b = trim_t + floor_even(trim_b - trim_t)
@@ -77,21 +85,20 @@ def convert_img(sess, in_filename, out_filename):
     if upscale:
         if not run_alpha and alpha is not None:
             if downscale:
-                alpha = skimage.transform.resize(alpha,
-                                                 floor_even(alpha.shape))
+                alpha = skimage.transform.resize(alpha, floor_even(alpha.shape))
             else:
                 alpha = skimage.transform.resize(
-                    alpha, (alpha.shape[0] * 2, alpha.shape[1] * 2))
+                    alpha, (alpha.shape[0] * 2, alpha.shape[1] * 2)
+                )
     else:
-        img = skimage.transform.resize(img,
-                                       (img.shape[0] // 2, img.shape[1] // 2))
+        img = skimage.transform.resize(img, (img.shape[0] // 2, img.shape[1] // 2))
         if alpha is not None:
             if run_alpha:
                 alpha = skimage.transform.resize(
-                    alpha, (alpha.shape[0] // 2, alpha.shape[1] // 2))
+                    alpha, (alpha.shape[0] // 2, alpha.shape[1] // 2)
+                )
             else:
-                alpha = skimage.transform.resize(alpha,
-                                                 floor_even(alpha.shape))
+                alpha = skimage.transform.resize(alpha, floor_even(alpha.shape))
 
     img = run_img(sess, img)
 
@@ -103,29 +110,34 @@ def convert_img(sess, in_filename, out_filename):
         alpha[alpha < 1 - trim_eps] **= alpha_gamma
 
     if upscale and downscale:
-        img = skimage.transform.resize(img,
-                                       (img.shape[0] // 2, img.shape[1] // 2))
+        img = skimage.transform.resize(img, (img.shape[0] // 2, img.shape[1] // 2))
         if run_alpha:
             alpha = skimage.transform.resize(
-                alpha, (alpha.shape[0] // 2, alpha.shape[1] // 2))
+                alpha, (alpha.shape[0] // 2, alpha.shape[1] // 2)
+            )
 
     if trim_alpha and alpha is not None:
-        img, alpha = untrim_img(img, alpha, original_shape,
-                                (trim_t, trim_b, trim_l, trim_r))
+        img, alpha = untrim_img(
+            img, alpha, original_shape, (trim_t, trim_b, trim_l, trim_r)
+        )
 
     # Network output is BGR
-    write_img(out_filename,
-              img,
-              alpha if output_alpha else None,
-              swap_rb=False,
-              signed=False,
-              output_gray=output_gray,
-              output_8_bit=output_8_bit)
+    write_img(
+        out_filename,
+        img,
+        alpha if output_alpha else None,
+        swap_rb=False,
+        signed=False,
+        output_gray=output_gray,
+        output_8_bit=output_8_bit,
+    )
 
 
-if __name__ == '__main__':
-    do_imgs(convert_img,
-            model_filename,
-            in_filenames,
-            out_suffix,
-            out_extname=None if output_8_bit else '.png')
+if __name__ == "__main__":
+    do_imgs(
+        convert_img,
+        model_filename,
+        in_filenames,
+        out_suffix,
+        out_extname=None if output_8_bit else ".png",
+    )

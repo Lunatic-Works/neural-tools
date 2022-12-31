@@ -61,11 +61,15 @@ def get_pieces(img, piece_inner_size, pad_size):
     pad_b = img_padded_h - img.shape[0] - pad_t
     pad_l = floor((img_padded_w - img.shape[1]) / 2)
     pad_r = img_padded_w - img.shape[1] - pad_l
-    img_full = np.pad(img, [
-        (pad_t + pad_size, pad_b + pad_size),
-        (pad_l + pad_size, pad_r + pad_size),
-        (0, 0),
-    ], 'reflect')
+    img_full = np.pad(
+        img,
+        [
+            (pad_t + pad_size, pad_b + pad_size),
+            (pad_l + pad_size, pad_r + pad_size),
+            (0, 0),
+        ],
+        "reflect",
+    )
 
     pieces = []
     for i in range(max_row):
@@ -85,19 +89,16 @@ def get_pieces(img, piece_inner_size, pad_size):
 def get_batch(pieces, batch_size):
     idx = 0
     while idx < pieces.shape[0]:
-        batch = pieces[idx:idx + batch_size]
+        batch = pieces[idx : idx + batch_size]
         batch = batch.transpose(0, 3, 1, 2)
         idx += batch.shape[0]
-        print('Piece {}/{}'.format(idx, pieces.shape[0]))
+        print("Piece {}/{}".format(idx, pieces.shape[0]))
         yield batch
 
 
-def merge_img(pieces,
-              piece_inner_size,
-              pad_size,
-              max_row_col,
-              pads,
-              scale_shift=(1, 0)):
+def merge_img(
+    pieces, piece_inner_size, pad_size, max_row_col, pads, scale_shift=(1, 0)
+):
     max_row, max_col = max_row_col
     pad_t, pad_b, pad_l, pad_r = pads
     scale, shift = scale_shift
@@ -106,8 +107,7 @@ def merge_img(pieces,
     scaled_inner_size = piece_inner_size * scale
     scaled_outer_size = piece_outer_size * scale
 
-    img = np.empty(
-        (max_row * scaled_outer_size, max_col * scaled_outer_size, 3))
+    img = np.empty((max_row * scaled_outer_size, max_col * scaled_outer_size, 3))
     for idx, piece in enumerate(pieces):
         i = idx // max_col
         j = idx % max_col
@@ -118,21 +118,25 @@ def merge_img(pieces,
         idx_r = idx_l + scaled_inner_size
         piece_l = pad_size * scale - shift
         piece_r = piece_l + scaled_inner_size
-        img[idx_t:idx_b, idx_l:idx_r, :] = piece[piece_l:piece_r,
-                                                 piece_l:piece_r, :]
+        img[idx_t:idx_b, idx_l:idx_r, :] = piece[piece_l:piece_r, piece_l:piece_r, :]
 
-    img = img[pad_t * scale:(max_row * piece_inner_size - pad_b) * scale,
-              pad_l * scale:(max_col * piece_inner_size - pad_r) * scale, :]
+    img = img[
+        pad_t * scale : (max_row * piece_inner_size - pad_b) * scale,
+        pad_l * scale : (max_col * piece_inner_size - pad_r) * scale,
+        :,
+    ]
     return img
 
 
-def read_img(filename,
-             swap_rb=False,
-             gamma=1,
-             signed=True,
-             scale=None,
-             noise=0,
-             return_alpha=False):
+def read_img(
+    filename,
+    swap_rb=False,
+    gamma=1,
+    signed=True,
+    scale=None,
+    noise=0,
+    return_alpha=False,
+):
     # Use cv2 to support 16 bit image
     img = np.fromfile(filename, dtype=np.uint8)
     img = cv2.imdecode(img, cv2.IMREAD_UNCHANGED)
@@ -178,14 +182,16 @@ def read_img(filename,
         return img
 
 
-def write_img(filename,
-              img,
-              alpha=None,
-              swap_rb=False,
-              signed=True,
-              scale=None,
-              output_gray=False,
-              output_8_bit=True):
+def write_img(
+    filename,
+    img,
+    alpha=None,
+    swap_rb=False,
+    signed=True,
+    scale=None,
+    output_gray=False,
+    output_8_bit=True,
+):
     if scale is not None:
         img /= scale
         if alpha is not None:
@@ -221,30 +227,27 @@ def write_img(filename,
     img.tofile(filename)
 
 
-def do_imgs(fun,
-            model_filename,
-            in_patterns,
-            out_suffix,
-            out_extname=None,
-            tmp_filename=None):
+def do_imgs(
+    fun, model_filename, in_patterns, out_suffix, out_extname=None, tmp_filename=None
+):
     if model_filename:
         sess = rt.InferenceSession(
-            model_filename,
-            providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+            model_filename, providers=["CUDAExecutionProvider", "CPUExecutionProvider"]
+        )
     else:
         sess = None
 
-    if type(in_patterns) == str:
+    if isinstance(in_patterns, str):
         in_patterns = [in_patterns]
 
     in_filenames = []
     for in_pattern in in_patterns:
         in_filename = glob(in_pattern)
         if not in_filename:
-            print(f'Warning: File not found: {in_pattern}')
+            print(f"Warning: File not found: {in_pattern}")
         in_filenames += in_filename
     if not in_filenames:
-        print('Warning: No input file')
+        print("Warning: No input file")
 
     for in_filename in in_filenames:
         print(in_filename)

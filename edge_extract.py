@@ -6,9 +6,9 @@ from skimage.feature import canny
 from utils import do_imgs, read_img, write_img
 
 in_filenames = [
-    './in.png',
+    "./in.png",
 ]
-out_suffix = '_edge'
+out_suffix = "_edge"
 
 sigma = 2
 output_8_bit = False
@@ -24,9 +24,11 @@ def convert_img(_, in_filename, out_filename):
     write_img(out_filename, img, signed=False, output_8_bit=output_8_bit)
 
 
-if __name__ == '__main__':
-    do_imgs(convert_img,
-            None,
-            in_filenames,
-            out_suffix,
-            out_extname=None if output_8_bit else '.png')
+if __name__ == "__main__":
+    do_imgs(
+        convert_img,
+        None,
+        in_filenames,
+        out_suffix,
+        out_extname=None if output_8_bit else ".png",
+    )
