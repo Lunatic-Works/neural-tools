@@ -17,12 +17,16 @@ pad_size = 60
 batch_size = 24
 
 swap_rb = True
-noise = 0
+noise = 0.01
+scale = 1
 output_8_bit = False
 
 
 def convert_img(sess, in_filename, out_filename):
     img = read_img(in_filename, swap_rb=swap_rb, signed=True, noise=noise)
+
+    if scale != 1:
+        img = skimage.transform.rescale(img, scale, channel_axis=2)
 
     # Use the whole image to calibrate InstanceNorm
     piece_outer_size = piece_inner_size + pad_size * 2

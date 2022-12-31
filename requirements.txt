@@ -1,5 +1,5 @@
 numpy
 onnxruntime
-opencv-python
+opencv-python-headless
 pillow
 scikit-image

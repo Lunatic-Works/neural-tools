@@ -66,12 +66,12 @@ def solve_img(img, uwx, uwy, lam=0.01):
     H, W, C = img.shape
     size = H * W
 
-    e = np.concatenate([uwx, np.zeros((1, W))], axis=0)
+    e = np.pad(uwx, ((0, 1), (0, 0)))
     e = -lam * e.flatten()
-    w = np.concatenate([np.zeros(W), e[:-W]])
-    s = np.concatenate([uwy, np.zeros((H, 1))], axis=1)
+    w = np.pad(e[:-W], ((W, 0), ))
+    s = np.pad(uwy, ((0, 0), (0, 1)))
     s = -lam * s.flatten()
-    n = np.concatenate([np.zeros(1), s[:-1]])
+    n = np.pad(s[:-1], ((1, 0), ))
     d = 1 - (e + w + s + n)
     A = dia_array(([d, s, n, e, w], [0, -1, 1, -W, W]), shape=(size, size))
     A = A.tocsr()

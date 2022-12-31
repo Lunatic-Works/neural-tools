@@ -223,7 +223,7 @@ def write_img(filename,
 
 def do_imgs(fun,
             model_filename,
-            in_filenames,
+            in_patterns,
             out_suffix,
             out_extname=None,
             tmp_filename=None):
@@ -234,12 +234,17 @@ def do_imgs(fun,
     else:
         sess = None
 
-    if type(in_filenames) == str:
-        in_filenames = [in_filenames]
+    if type(in_patterns) == str:
+        in_patterns = [in_patterns]
 
-    in_filenames = sum([glob(x) for x in in_filenames], [])
+    in_filenames = []
+    for in_pattern in in_patterns:
+        in_filename = glob(in_pattern)
+        if not in_filename:
+            print(f'Warning: File not found: {in_pattern}')
+        in_filenames += in_filename
     if not in_filenames:
-        print('No in_filenames')
+        print('Warning: No input file')
 
     for in_filename in in_filenames:
         print(in_filename)
