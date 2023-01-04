@@ -54,8 +54,6 @@ def run_img(sess, img):
     out_img = merge_img(
         out_pieces, piece_inner_size, pad_size, max_row_col, pads, (up_scale, up_shift)
     )
-    out_img = np.clip(out_img, 0, 1)
-
     return out_img
 
 

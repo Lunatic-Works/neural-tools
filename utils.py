@@ -5,8 +5,8 @@ from math import ceil, floor
 
 import cv2
 import numpy as np
-import onnxruntime as rt
 import skimage
+from numba import njit
 
 
 def floor_even(x):
@@ -128,6 +128,41 @@ def merge_img(
     return img
 
 
+# Inplace
+def randomize(img, n_bins):
+    delta = 1 / n_bins
+    img += delta * (np.random.rand(*img.shape) - 0.5)
+
+
+# Inplace
+@njit
+def quantize(img, n_bins):
+    H, W, C = img.shape
+    for i in range(H):
+        for j in range(W):
+            for k in range(C):
+                x0 = img[i, j, k]
+                x = round(x0 * n_bins) / n_bins
+                x = min(max(x, 0), 1)
+                r = x0 - x
+
+                img[i, j, k] = x
+                if i == H - 1:
+                    if j < W - 1:
+                        img[i, j + 1, k] += r
+                else:
+                    if j == 0:
+                        img[i, j + 1, k] += r / 2
+                        img[i + 1, j, k] += r / 2
+                    elif j == W - 1:
+                        img[i + 1, j - 1, k] += r / 2
+                        img[i + 1, j, k] += r / 2
+                    else:
+                        img[i, j + 1, k] += r / 2
+                        img[i + 1, j - 1, k] += r / 4
+                        img[i + 1, j, k] += r / 4
+
+
 def read_img(
     filename,
     swap_rb=False,
@@ -191,6 +226,7 @@ def write_img(
     scale=None,
     output_gray=False,
     output_8_bit=True,
+    quant_bit=0,
 ):
     if scale is not None:
         img /= scale
@@ -200,8 +236,8 @@ def write_img(
     if signed:
         # [-1, 1] -> [0, 1]
         img = (img + 1) / 2
-
-    img = np.clip(img, 0, 1)
+        if alpha is not None:
+            alpha = (alpha + 1) / 2
 
     if swap_rb:
         assert img.ndim == 3
@@ -218,6 +254,14 @@ def write_img(
         img = np.concatenate([img, alpha], axis=2)
 
     print("Quantizing...")
+    if output_8_bit and quant_bit == 0:
+        quant_bit = 8
+    if quant_bit > 0:
+        n_bins = 2**quant_bit - 1
+        randomize(img, n_bins)
+        quantize(img, n_bins)
+    else:
+        img = np.clip(img, 0, 1)
     if output_8_bit:
         img = skimage.img_as_ubyte(img)
     else:
@@ -234,6 +278,8 @@ def write_img(
 def do_imgs(
     fun, model_filename, in_patterns, out_suffix, out_extname=None, tmp_filename=None
 ):
+    import onnxruntime as rt
+
     if model_filename:
         sess = rt.InferenceSession(
             model_filename, providers=["CUDAExecutionProvider", "CPUExecutionProvider"]

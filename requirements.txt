@@ -1,5 +1,7 @@
+numba
 numpy
 onnxruntime
 opencv-python-headless
 pillow
 scikit-image
+scipy
