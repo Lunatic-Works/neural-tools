@@ -217,13 +217,17 @@ def write_img(
             alpha = alpha[:, :, None]
         img = np.concatenate([img, alpha], axis=2)
 
+    print("Quantizing...")
     if output_8_bit:
         img = skimage.img_as_ubyte(img)
     else:
         img = skimage.img_as_uint(img)
 
+    print("Encoding...")
     ret, img = cv2.imencode(os.path.splitext(filename)[1], img)
     assert ret is True
+
+    print("Writing...")
     img.tofile(filename)
 
 

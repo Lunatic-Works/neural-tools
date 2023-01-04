@@ -14,6 +14,7 @@ Lunatic Works自用的图形学和神经网络工具合集。
 * [CycleGAN](https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix)
 * [Erasing Appearance Preservation](https://github.com/lllyasviel/AppearanceEraser)
 * [Fast Neural Style](https://github.com/abhiskk/fast-neural-style)
+* [Real-CUGAN](https://github.com/bilibili/ailab)
 * [Sketch Simplification](https://github.com/bobbens/sketch_simplification)
 * [White Box Cartoonization](https://github.com/SystemErrorWang/White-box-Cartoonization)
 * [waifu2x](https://github.com/nagadomi/waifu2x)

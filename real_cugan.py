@@ -15,17 +15,17 @@ from utils import (
     write_img,
 )
 
-model_filename = "./models/waifu2x/noise1_scale2x.onnx"
+model_filename = "./models/real_cugan/up2x_latest_denoise3x.onnx"
 in_filenames = [
     "./in.png",
 ]
-out_suffix = "_waifu2x"
+out_suffix = "_denoise3x"
 
-piece_inner_size = 36
+piece_inner_size = 232
 pad_size = 12
 up_scale = 2
-up_shift = 14
-batch_size = 400
+up_shift = 0
+batch_size = 8
 
 trim_alpha = False
 trim_eps = 1e-3
@@ -60,8 +60,7 @@ def run_img(sess, img):
 
 
 def convert_img(sess, in_filename, out_filename):
-    # Network input is BGR
-    img, alpha = read_img(in_filename, swap_rb=False, signed=False, return_alpha=True)
+    img, alpha = read_img(in_filename, swap_rb=True, signed=False, return_alpha=True)
 
     if trim_alpha and alpha is not None:
         original_shape, (trim_t, trim_b, trim_l, trim_r) = trim_img(
@@ -121,12 +120,11 @@ def convert_img(sess, in_filename, out_filename):
             img, alpha, original_shape, (trim_t, trim_b, trim_l, trim_r)
         )
 
-    # Network output is BGR
     write_img(
         out_filename,
         img,
         alpha if output_alpha else None,
-        swap_rb=False,
+        swap_rb=True,
         signed=False,
         output_gray=output_gray,
         output_8_bit=output_8_bit,
