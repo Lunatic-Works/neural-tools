@@ -21,8 +21,8 @@ in_filenames = [
 ]
 out_suffix = "_denoise3x"
 
-piece_inner_size = 232
-pad_size = 12
+piece_inner_size = 192
+pad_size = 32
 up_scale = 2
 up_shift = 0
 batch_size = 8

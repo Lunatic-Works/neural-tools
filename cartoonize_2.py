@@ -5,15 +5,16 @@ import skimage.transform
 
 from utils import do_imgs, get_batch, get_pieces, merge_img, read_img, write_img
 
-model_filename = "./models/cartoonize_2/danbooru.onnx"
+model_filenames = [
+    "./models/cartoonize_2/danbooru.onnx",
+]
 in_filenames = [
     "./in.png",
 ]
-out_suffix = "_danbooru"
 
 piece_inner_size = 416
 pad_size = 48
-batch_size = 16
+batch_size = 24
 
 swap_rb = True
 noise = 0.01
@@ -46,8 +47,7 @@ def convert_img(sess, in_filename, out_filename):
 if __name__ == "__main__":
     do_imgs(
         convert_img,
-        model_filename,
+        model_filenames,
         in_filenames,
-        out_suffix,
         out_extname=None if output_8_bit else ".png",
     )

@@ -5,11 +5,12 @@ import skimage.transform
 
 from utils import do_imgs, get_batch, get_pieces, merge_img, read_img, write_img
 
-model_filename = "./models/cartoonize/shinkai.onnx"
+model_filenames = [
+    "./models/cartoonize/shinkai.onnx",
+]
 in_filenames = [
     "./in.png",
 ]
-out_suffix = "_shinkai"
 
 piece_inner_size = 240
 pad_size = 60
@@ -53,8 +54,7 @@ def convert_img(sess, in_filename, out_filename):
 if __name__ == "__main__":
     do_imgs(
         convert_img,
-        model_filename,
+        model_filenames,
         in_filenames,
-        out_suffix,
         out_extname=None if output_8_bit else ".png",
     )

@@ -7,12 +7,10 @@ in_filenames = [
 ]
 out_suffix = "_quant"
 
-quant_bit = 6
-
 
 def convert_img(_, in_filename, out_filename):
-    img = read_img(in_filename, swap_rb=True, signed=False)
-    write_img(out_filename, img, swap_rb=True, signed=False, quant_bit=quant_bit)
+    img = read_img(in_filename, signed=False)
+    write_img(out_filename, img, signed=False, quant_bit="adapt")
 
 
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
+import gc
 import os
 import shutil
 from glob import glob
@@ -163,6 +164,46 @@ def quantize(img, n_bins):
                         img[i + 1, j, k] += r / 4
 
 
+# Inplace
+@njit
+def quantize_adapt(img):
+    H, W, C = img.shape
+    for i in range(H):
+        for j in range(W):
+            for k in range(C):
+                x0 = img[i, j, k]
+                if x0 > 0.5:
+                    n_bins = 15
+                elif x0 > 0.25:
+                    n_bins = 31
+                elif x0 > 0.125:
+                    n_bins = 63
+                elif x0 > 0.0625:
+                    n_bins = 127
+                elif x0 > 0.03125:
+                    n_bins = 255
+
+                x = round(x0 * n_bins) / n_bins
+                x = min(max(x, 0), 1)
+                r = x0 - x
+
+                img[i, j, k] = x
+                if i == H - 1:
+                    if j < W - 1:
+                        img[i, j + 1, k] += r
+                else:
+                    if j == 0:
+                        img[i, j + 1, k] += r / 2
+                        img[i + 1, j, k] += r / 2
+                    elif j == W - 1:
+                        img[i + 1, j - 1, k] += r / 2
+                        img[i + 1, j, k] += r / 2
+                    else:
+                        img[i, j + 1, k] += r / 2
+                        img[i + 1, j - 1, k] += r / 4
+                        img[i + 1, j, k] += r / 4
+
+
 def read_img(
     filename,
     swap_rb=False,
@@ -244,11 +285,13 @@ def write_img(
         # RGB -> BGR
         img = img[:, :, ::-1]
 
-    if output_gray:
+    if output_gray and img.ndim == 3:
         img = img.mean(axis=2, keepdims=True)
 
+    if img.ndim == 2:
+        img = img[:, :, None]
+
     if alpha is not None:
-        assert img.ndim == 3
         if alpha.ndim == 2:
             alpha = alpha[:, :, None]
         img = np.concatenate([img, alpha], axis=2)
@@ -256,7 +299,11 @@ def write_img(
     print("Quantizing...")
     if output_8_bit and quant_bit == 0:
         quant_bit = 8
-    if quant_bit > 0:
+    if quant_bit == "adapt":
+        img = 1 - img
+        quantize_adapt(img)
+        img = 1 - img
+    elif quant_bit > 0:
         n_bins = 2**quant_bit - 1
         randomize(img, n_bins)
         quantize(img, n_bins)
@@ -276,16 +323,17 @@ def write_img(
 
 
 def do_imgs(
-    fun, model_filename, in_patterns, out_suffix, out_extname=None, tmp_filename=None
+    fun,
+    model_filenames,
+    in_patterns,
+    out_suffix=None,
+    out_extname=None,
+    tmp_filename=None,
 ):
-    import onnxruntime as rt
-
-    if model_filename:
-        sess = rt.InferenceSession(
-            model_filename, providers=["CUDAExecutionProvider", "CPUExecutionProvider"]
-        )
-    else:
-        sess = None
+    if isinstance(model_filenames, str):
+        model_filenames = [model_filenames]
+    elif model_filenames is None:
+        model_filenames = [None]
 
     if isinstance(in_patterns, str):
         in_patterns = [in_patterns]
@@ -299,18 +347,46 @@ def do_imgs(
     if not in_filenames:
         print("Warning: No input file")
 
-    for in_filename in in_filenames:
-        print(in_filename)
+    for model_filename in model_filenames:
+        if model_filename:
+            import onnxruntime as rt
 
-        basename, extname = os.path.splitext(in_filename)
-        if out_extname:
-            out_filename = basename + out_suffix + out_extname
-        else:
-            out_filename = basename + out_suffix + extname
+            print(model_filename)
+            sess = rt.InferenceSession(
+                model_filename,
+                providers=[
+                    # "TensorrtExecutionProvider",
+                    "CUDAExecutionProvider",
+                    "CPUExecutionProvider",
+                ],
+            )
 
-        if tmp_filename:
-            shutil.copy2(in_filename, tmp_filename)
-            fun(sess, tmp_filename, tmp_filename)
-            shutil.move(tmp_filename, out_filename)
+            if out_suffix is None:
+                _out_suffix, _ = os.path.splitext(os.path.basename(model_filename))
+                _out_suffix = "_" + _out_suffix
+            else:
+                _out_suffix = out_suffix
         else:
-            fun(sess, in_filename, out_filename)
+            sess = None
+            assert out_suffix is not None
+            _out_suffix = out_suffix
+
+        for in_filename in in_filenames:
+            print(in_filename)
+
+            basename, extname = os.path.splitext(in_filename)
+            if out_extname:
+                out_filename = basename + _out_suffix + out_extname
+            else:
+                out_filename = basename + _out_suffix + extname
+
+            if tmp_filename:
+                shutil.copy2(in_filename, tmp_filename)
+                fun(sess, tmp_filename, tmp_filename)
+                shutil.move(tmp_filename, out_filename)
+            else:
+                fun(sess, in_filename, out_filename)
+
+        if sess is not None:
+            del sess
+            gc.collect()
