@@ -14,11 +14,13 @@ in_filenames = [
 
 piece_inner_size = 416
 pad_size = 48
-batch_size = 24
+batch_size = 8
 
 swap_rb = True
 noise = 0.01
 scale = 1
+wrap_x = False
+wrap_y = False
 output_8_bit = False
 
 
@@ -28,7 +30,9 @@ def convert_img(sess, in_filename, out_filename):
     if scale != 1:
         img = skimage.transform.rescale(img, scale, channel_axis=2)
 
-    pieces, max_row_col, pads = get_pieces(img, piece_inner_size, pad_size)
+    pieces, max_row_col, pads = get_pieces(
+        img, piece_inner_size, pad_size, wrap_x=wrap_x, wrap_y=wrap_y
+    )
 
     out_pieces = []
     for batch in get_batch(pieces, batch_size):

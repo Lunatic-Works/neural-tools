@@ -9,12 +9,12 @@ model_filename = "./models/stylize_2/cezanne.onnx"
 in_filenames = [
     "./in.png",
 ]
-out_suffix = "_cezanne_2"
+out_suffix = "_cezanne"
 
-size = 2048
+size = 1024
 
 swap_rb = True
-noise = 0
+noise = 0.001
 output_8_bit = False
 
 

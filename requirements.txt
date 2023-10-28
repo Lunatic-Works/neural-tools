@@ -1,7 +1,7 @@
 numba
 numpy
 onnxruntime-gpu
-opencv-python-headless
+opencv-contrib-python-headless
 Pillow
 scikit-image
 scipy

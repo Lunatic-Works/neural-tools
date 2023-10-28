@@ -6,7 +6,7 @@ import skimage.transform
 from utils import do_imgs, floor_even, read_img, trim_img, untrim_img, write_img
 from waifu2x import run_img
 
-model_filename = "./models/waifu2x/anime/noise1_scale2x.onnx"
+model_filename = "./models/waifu2x/noise0_scale2x.onnx"
 in_filenames = [
     "./in.png",
 ]

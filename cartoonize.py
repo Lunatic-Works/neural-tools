@@ -14,7 +14,7 @@ in_filenames = [
 
 piece_inner_size = 240
 pad_size = 60
-batch_size = 24
+batch_size = 8
 
 swap_rb = True
 noise = 0.01

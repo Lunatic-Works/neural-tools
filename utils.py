@@ -51,7 +51,7 @@ def untrim_img(img, alpha, original_shape, trims):
     return new_img, new_alpha
 
 
-def get_pieces(img, piece_inner_size, pad_size):
+def get_pieces(img, piece_inner_size, pad_size, *, wrap_x=False, wrap_y=False):
     piece_outer_size = piece_inner_size + pad_size * 2
 
     max_row = ceil(img.shape[0] / piece_inner_size)
@@ -64,12 +64,13 @@ def get_pieces(img, piece_inner_size, pad_size):
     pad_r = img_padded_w - img.shape[1] - pad_l
     img_full = np.pad(
         img,
-        [
-            (pad_t + pad_size, pad_b + pad_size),
-            (pad_l + pad_size, pad_r + pad_size),
-            (0, 0),
-        ],
-        "reflect",
+        [(pad_t + pad_size, pad_b + pad_size), (0, 0), (0, 0)],
+        "wrap" if wrap_y else "reflect",
+    )
+    img_full = np.pad(
+        img_full,
+        [(0, 0), (pad_l + pad_size, pad_r + pad_size), (0, 0)],
+        "wrap" if wrap_x else "reflect",
     )
 
     pieces = []

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import cv2
 import numpy as np
 import skimage.transform
 
@@ -15,24 +16,34 @@ from utils import (
     write_img,
 )
 
+# model_filename = "./models/real_cugan/up2x_latest_conservative.onnx"
 model_filename = "./models/real_cugan/up2x_latest_denoise3x.onnx"
 in_filenames = [
     "./in.png",
 ]
+# out_suffix = "_conservative"
 out_suffix = "_denoise3x"
 
 piece_inner_size = 192
 pad_size = 32
 up_scale = 2
 up_shift = 0
-batch_size = 8
+batch_size = 4
 
+pre_blur = 0.5
+pre_darken = False
+pre_lighten = False
+# pre_blur = 1
+# pre_darken = True
+# pre_lighten = True
 trim_alpha = False
 trim_eps = 1e-3
 upscale = True
 downscale = True
 run_alpha = False
 alpha_gamma = 1
+wrap_x = False
+wrap_y = False
 output_gray = False
 output_alpha = False
 output_8_bit = True
@@ -42,7 +53,9 @@ if trim_alpha or run_alpha:
 
 
 def run_img(sess, img):
-    pieces, max_row_col, pads = get_pieces(img, piece_inner_size, pad_size)
+    pieces, max_row_col, pads = get_pieces(
+        img, piece_inner_size, pad_size, wrap_x=wrap_x, wrap_y=wrap_y
+    )
 
     out_pieces = []
     for batch in get_batch(pieces, batch_size):
@@ -59,6 +72,21 @@ def run_img(sess, img):
 
 def convert_img(sess, in_filename, out_filename):
     img, alpha = read_img(in_filename, swap_rb=True, signed=False, return_alpha=True)
+
+    if pre_blur:
+        img_blur = cv2.GaussianBlur(img, (0, 0), pre_blur)
+    else:
+        img_blur = img
+
+    if pre_darken:
+        assert pre_blur
+        assert not pre_lighten
+        img = np.minimum(img, img_blur)
+    elif pre_lighten:
+        assert pre_blur
+        img = np.maximum(img, img_blur)
+    else:
+        img = img_blur
 
     if trim_alpha and alpha is not None:
         original_shape, (trim_t, trim_b, trim_l, trim_r) = trim_img(
