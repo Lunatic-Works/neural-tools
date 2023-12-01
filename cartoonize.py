@@ -16,7 +16,7 @@ piece_inner_size = 240
 pad_size = 60
 batch_size = 8
 
-swap_rb = True
+swap_rb = False
 noise = 0.01
 scale = 1
 output_8_bit = False
@@ -28,18 +28,11 @@ def convert_img(sess, in_filename, out_filename):
     if scale != 1:
         img = skimage.transform.rescale(img, scale, channel_axis=2)
 
-    # Use the whole image to calibrate InstanceNorm
-    piece_outer_size = piece_inner_size + pad_size * 2
-    img_small = skimage.transform.resize(img, (piece_outer_size,) * 2)
-    img_small = img_small[None, :, :, :].transpose(0, 3, 1, 2)
-
     pieces, max_row_col, pads = get_pieces(img, piece_inner_size, pad_size)
 
     out_pieces = []
     for batch in get_batch(pieces, batch_size):
-        batch = np.concatenate([img_small, batch])
         out_batch = sess.run(None, {"in": batch})[0]
-        out_batch = out_batch[1:]
         out_batch = out_batch.transpose(0, 2, 3, 1)
         out_pieces.append(out_batch)
     out_pieces = np.concatenate(out_pieces)
