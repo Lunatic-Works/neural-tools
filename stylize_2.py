@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 
 import numpy as np
-import skimage.transform
 
-from utils import do_imgs, read_img, write_img
+from utils import do_imgs, get_batch, get_pieces, merge_img, read_img, write_img
 
 model_filename = "./models/stylize_2/cezanne.onnx"
 in_filenames = [
@@ -11,25 +10,29 @@ in_filenames = [
 ]
 out_suffix = "_cezanne"
 
-size = 1024
+piece_inner_size = 240
+pad_size = 80
+batch_size = 12
 
 swap_rb = True
-noise = 0.001
+noise = 0.01
 output_8_bit = False
 
 
 def convert_img(sess, in_filename, out_filename):
     img = read_img(in_filename, swap_rb=swap_rb, signed=False, noise=noise)
-    original_size = img.shape[:2]
-    img = skimage.transform.resize(img, (size, size))
-    img = img.transpose(2, 0, 1)
-    img = np.expand_dims(img, axis=0)
 
-    out_img = sess.run(None, {"Input": img})[0]
+    pieces, max_row_col, pads = get_pieces(img, piece_inner_size, pad_size)
 
-    out_img = out_img.squeeze(axis=0)
-    out_img = out_img.transpose(1, 2, 0)
-    out_img = skimage.transform.resize(out_img, original_size)
+    out_pieces = []
+    for batch in get_batch(pieces, batch_size):
+        out_batch = sess.run(None, {"in": batch})[0]
+        out_batch = out_batch.transpose(0, 2, 3, 1)
+        out_pieces.append(out_batch)
+    out_pieces = np.concatenate(out_pieces)
+
+    out_img = merge_img(out_pieces, piece_inner_size, pad_size, max_row_col, pads)
+
     write_img(
         out_filename, out_img, swap_rb=swap_rb, signed=False, output_8_bit=output_8_bit
     )

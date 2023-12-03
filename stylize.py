@@ -11,7 +11,7 @@ in_filenames = [
 out_suffix = "_starry"
 
 piece_inner_size = 240
-pad_size = 120
+pad_size = 60
 batch_size = 12
 
 swap_rb = False
