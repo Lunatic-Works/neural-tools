@@ -13,8 +13,6 @@ in_filenames = [
 out_suffix = "_simplify"
 
 # scale = 0.25
-# scale = (2160, 3840)
-# scale = (1080, 1920)
 scale = (540, 960)
 erase_ratio = 0.5
 max_iter = 1
@@ -49,7 +47,7 @@ def convert_img(sess, in_filename, out_filename, eps=1e-15):
         img = skimage.transform.resize(img, scale)
 
     height, width, _ = img.shape
-    mask = np.random.rand(height, width) < 0.5
+    mask = np.random.rand(height, width) > 0.5
     for i in range(max_iter):
         print("eap", i)
 
@@ -70,7 +68,7 @@ def convert_img(sess, in_filename, out_filename, eps=1e-15):
         knapsack = value / (weight + eps)
         threshold = np.quantile(knapsack, 1 - (i + 1) / (max_iter - 1) * erase_ratio)
         knapsack /= threshold + eps
-        mask = np.random.rand(height, width) < knapsack
+        mask = np.random.rand(height, width) > knapsack
 
 
 if __name__ == "__main__":
@@ -78,6 +76,6 @@ if __name__ == "__main__":
         convert_img,
         None,
         in_filenames,
-        out_suffix,
+        out_suffix=out_suffix,
         out_extname=None if output_8_bit else ".png",
     )

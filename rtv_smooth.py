@@ -1,35 +1,107 @@
 import numpy as np
+from numba import njit, prange
 from scipy.sparse import dia_array
 from scipy.sparse.linalg import bicgstab
 from skimage.color import rgb2xyz
 from skimage.filters import gaussian
 
 
-def cross_sum(a):
-    a_pad = np.pad(a, ((1, 1), (1, 1), (0, 0)))
-    out = a_pad[2:, 1:-1] + a_pad[:-2, 1:-1] + a_pad[1:-1, 2:] + a_pad[1:-1, :-2]
-    return out
+def cross_sum(a, out):
+    a = np.pad(a, ((1, 1), (1, 1), (0, 0)))
+    out[:] = a[2:, 1:-1] + a[:-2, 1:-1] + a[1:-1, 2:] + a[1:-1, :-2]
 
 
-def tv_smooth(img, mask, max_iter=10**3, tol=1e-6, eps=1e-15):
+@njit
+def cross_sum_unroll(a, out, mask):
+    for i in prange(1, a.shape[0] - 1):
+        for j in range(1, a.shape[1] - 1):
+            if mask[i, j]:
+                continue
+            out[i, j] = 4 * a[i, j]
+            out[i, j] += a[i - 1, j]
+            out[i, j] += a[i + 1, j]
+            out[i, j] += a[i, j - 1]
+            out[i, j] += a[i, j + 1]
+
+    for i in range(1, a.shape[0] - 1):
+        j = 0
+        if not mask[i, j]:
+            out[i, j] = 4 * a[i, j]
+            out[i, j] += a[i - 1, j]
+            out[i, j] += a[i + 1, j]
+            out[i, j] += a[i, j + 1]
+
+        j = a.shape[1] - 1
+        if not [i, j]:
+            out[i, j] = 4 * a[i, j]
+            out[i, j] += a[i - 1, j]
+            out[i, j] += a[i + 1, j]
+            out[i, j] += a[i, j - 1]
+
+    for j in range(1, a.shape[1] - 1):
+        i = 0
+        if not mask[i, j]:
+            out[i, j] = 4 * a[i, j]
+            out[i, j] += a[i + 1, j]
+            out[i, j] += a[i, j - 1]
+            out[i, j] += a[i, j + 1]
+
+        i = a.shape[0] - 1
+        if not mask[i, j]:
+            out[i, j] = 4 * a[i, j]
+            out[i, j] += a[i - 1, j]
+            out[i, j] += a[i, j - 1]
+            out[i, j] += a[i, j + 1]
+
+    i = 0
+    j = 0
+    if not mask[i, j]:
+        out[i, j] = 4 * a[i, j]
+        out[i, j] += a[i + 1, j]
+        out[i, j] += a[i, j + 1]
+
+    i = 0
+    j = a.shape[1] - 1
+    if not mask[i, j]:
+        out[i, j] = 4 * a[i, j]
+        out[i, j] += a[i + 1, j]
+        out[i, j] += a[i, j - 1]
+
+    i = a.shape[0] - 1
+    j = 0
+    if not mask[i, j]:
+        out[i, j] = 4 * a[i, j]
+        out[i, j] += a[i - 1, j]
+        out[i, j] += a[i, j + 1]
+
+    i = a.shape[0] - 1
+    j = a.shape[1] - 1
+    if not mask[i, j]:
+        out[i, j] = 4 * a[i, j]
+        out[i, j] += a[i - 1, j]
+        out[i, j] += a[i, j - 1]
+
+
+def tv_smooth(img, mask, max_iter=10**3, tol=1e-6):
     assert mask.ndim == 2
-    mask = mask[:, :, None]
+    mask_0 = mask[:, :, None]
+    mask = mask_0.astype(img.dtype)
 
-    img_old = img
-    mask_inv = 1 - mask
+    img_new = np.zeros_like(img)
+    mask_new = np.zeros_like(mask)
     for _ in range(max_iter):
-        img_new = mask_inv * img_old
-        img_new = cross_sum(img_new)
-        mask_inv = cross_sum(mask_inv)
-        img_new /= mask_inv + eps
-        img_new = mask * img_new + (1 - mask) * img
+        cross_sum(mask * img, img_new)
+        cross_sum(mask, mask_new)
+        mask = mask_new
+        img_new /= np.maximum(mask, 1e-7).astype(mask.dtype)
+        img_new = np.where(mask_0, img, img_new)
 
-        norm = ((img_new - img_old) ** 2).mean()
+        norm = ((img_new - img) ** 2).max()
         if norm < tol:
             break
 
-        img_old = img_new
-        mask_inv[mask_inv > 0] = 1
+        img, img_new = img_new, img
+        mask = (mask > 0).astype(mask.dtype)
 
     return img_new
 
@@ -87,17 +159,16 @@ def solve_img(img, uwx, uwy, lam=0.01):
 
 
 def rtv_smooth(img, sigma=3, max_iter=10, tol=1e-4):
-    img_old = img
     for i in range(max_iter):
         print("rtv_smooth", i)
 
-        uwx, uwy = compute_texture_weights(img_old, sigma)
+        uwx, uwy = compute_texture_weights(img, sigma)
         img_new = solve_img(img, uwx, uwy)
 
-        norm = ((img_new - img_old) ** 2).mean()
+        norm = ((img_new - img) ** 2).mean()
         if norm < tol:
             break
 
-        img_old = img_new
+        img = img_new
 
     return img_new
