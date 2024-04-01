@@ -14,4 +14,4 @@ def convert_img(_, in_filename, out_filename):
 
 
 if __name__ == "__main__":
-    do_imgs(convert_img, None, in_filenames, out_suffix, out_extname=".png")
+    do_imgs(convert_img, None, in_filenames, out_suffix=out_suffix, out_extname=".png")

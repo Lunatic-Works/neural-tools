@@ -44,6 +44,6 @@ if __name__ == "__main__":
         convert_img,
         model_filename,
         in_filenames,
-        out_suffix,
+        out_suffix=out_suffix,
         out_extname=None if output_8_bit else ".png",
     )

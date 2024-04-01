@@ -45,8 +45,14 @@ def convert_img(sess, in_filename, out_filename):
     )
 
     # Network output is BGR
-    write_img(out_filename, img, alpha, swap_rb=False, signed=False)
+    write_img(out_filename, img, alpha=alpha, swap_rb=False, signed=False)
 
 
 if __name__ == "__main__":
-    do_imgs(convert_img, model_filename, in_filenames, out_suffix)
+    do_imgs(
+        convert_img,
+        model_filename,
+        in_filenames,
+        out_suffix=out_suffix,
+        out_extname=".png",
+    )

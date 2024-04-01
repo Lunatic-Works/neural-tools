@@ -19,24 +19,29 @@ def floor_even(x):
 
 
 # Does not copy img and alpha
-def trim_img(img, alpha, eps):
+def trim_img(img, alpha, eps, *, pad=0):
     original_shape = alpha.shape
 
     trim_t = 0
-    while np.all(alpha[trim_t, :] < eps):
+    while np.all(alpha[trim_t, :] <= eps):
         trim_t += 1
     trim_b = alpha.shape[0] - 1
-    while np.all(alpha[trim_b, :] < eps):
+    while np.all(alpha[trim_b, :] <= eps):
         trim_b -= 1
     trim_l = 0
-    while np.all(alpha[:, trim_l] < eps):
+    while np.all(alpha[:, trim_l] <= eps):
         trim_l += 1
     trim_r = alpha.shape[1] - 1
-    while np.all(alpha[:, trim_r] < eps):
+    while np.all(alpha[:, trim_r] <= eps):
         trim_r -= 1
 
     trim_b += 1
     trim_r += 1
+
+    trim_t = max(trim_t - pad, 0)
+    trim_b = min(trim_b + pad, alpha.shape[0])
+    trim_l = max(trim_l - pad, 0)
+    trim_r = min(trim_r + pad, alpha.shape[1])
 
     trims = (trim_t, trim_b, trim_l, trim_r)
     return original_shape, trims
@@ -94,7 +99,7 @@ def get_batch(pieces, batch_size):
         batch = pieces[idx : idx + batch_size]
         batch = batch.transpose(0, 3, 1, 2)
         idx += batch.shape[0]
-        print("Piece {}/{}".format(idx, pieces.shape[0]))
+        print(f"Piece {idx}/{pieces.shape[0]}")
         yield batch
 
 
@@ -147,8 +152,12 @@ def quantize(img, n_bins):
                 x = round(x0 * n_bins) / n_bins
                 x = min(max(x, 0), 1)
                 r = x0 - x
-
                 img[i, j, k] = x
+
+                # Do not dither alpha
+                if k == 3:
+                    continue
+
                 if i == H - 1:
                     if j < W - 1:
                         img[i, j + 1, k] += r
@@ -187,8 +196,12 @@ def quantize_adapt(img):
                 x = round(x0 * n_bins) / n_bins
                 x = min(max(x, 0), 1)
                 r = x0 - x
-
                 img[i, j, k] = x
+
+                # Do not dither alpha
+                if k == 3:
+                    continue
+
                 if i == H - 1:
                     if j < W - 1:
                         img[i, j + 1, k] += r
@@ -207,6 +220,7 @@ def quantize_adapt(img):
 
 def read_img(
     filename,
+    *,
     swap_rb=False,
     gamma=1,
     signed=True,
@@ -262,6 +276,7 @@ def read_img(
 def write_img(
     filename,
     img,
+    *,
     alpha=None,
     swap_rb=False,
     signed=True,
@@ -327,6 +342,7 @@ def do_imgs(
     fun,
     model_filenames,
     in_patterns,
+    *,
     out_suffix=None,
     out_extname=None,
     tmp_filename=None,
@@ -363,8 +379,9 @@ def do_imgs(
             )
 
             if out_suffix is None:
-                _out_suffix, _ = os.path.splitext(os.path.basename(model_filename))
-                _out_suffix = "_" + _out_suffix
+                _out_suffix = (
+                    "_" + os.path.splitext(os.path.basename(model_filename))[0]
+                )
             else:
                 _out_suffix = out_suffix
         else:
@@ -376,10 +393,15 @@ def do_imgs(
             print(in_filename)
 
             basename, extname = os.path.splitext(in_filename)
-            if out_extname:
-                out_filename = basename + _out_suffix + out_extname
+            if isinstance(_out_suffix, tuple):
+                out_filename = basename.replace(_out_suffix[0], _out_suffix[1])
+                if len(_out_suffix) >= 3:
+                    out_filename += _out_suffix[2]
             else:
-                out_filename = basename + _out_suffix + extname
+                out_filename = basename + _out_suffix
+            if out_extname is None:
+                out_extname = extname
+            out_filename += out_extname
 
             if tmp_filename:
                 shutil.copy2(in_filename, tmp_filename)

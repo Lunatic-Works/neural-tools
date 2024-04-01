@@ -87,6 +87,7 @@ def convert_img(sess, in_filename, out_filename):
         img = np.maximum(img, img_blur)
     else:
         img = img_blur
+    del img_blur
 
     if trim_alpha and alpha is not None:
         original_shape, (trim_t, trim_b, trim_l, trim_r) = trim_img(
@@ -150,7 +151,7 @@ def convert_img(sess, in_filename, out_filename):
     write_img(
         out_filename,
         img,
-        alpha if output_alpha else None,
+        alpha=alpha if output_alpha else None,
         swap_rb=False,
         signed=False,
         output_gray=output_gray,
@@ -163,6 +164,6 @@ if __name__ == "__main__":
         convert_img,
         model_filename,
         in_filenames,
-        out_suffix,
+        out_suffix=out_suffix,
         out_extname=None if output_8_bit else ".png",
     )

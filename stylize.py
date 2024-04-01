@@ -8,7 +8,7 @@ model_filename = "./models/stylize/starry_night.onnx"
 in_filenames = [
     "./in.png",
 ]
-out_suffix = "_starry"
+out_suffix = None
 
 piece_inner_size = 240
 pad_size = 60
@@ -48,6 +48,6 @@ if __name__ == "__main__":
         convert_img,
         model_filename,
         in_filenames,
-        out_suffix,
+        out_suffix=out_suffix,
         out_extname=None if output_8_bit else ".png",
     )
