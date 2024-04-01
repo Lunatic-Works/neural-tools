@@ -56,13 +56,13 @@ def untrim_img(img, alpha, original_shape, trims):
     return new_img, new_alpha
 
 
-def get_pieces(img, piece_inner_size, pad_size, *, wrap_x=False, wrap_y=False):
-    piece_outer_size = piece_inner_size + pad_size * 2
+def get_tiles(img, tile_inner_size, pad_size, *, wrap_x=False, wrap_y=False):
+    tile_outer_size = tile_inner_size + pad_size * 2
 
-    max_row = ceil(img.shape[0] / piece_inner_size)
-    max_col = ceil(img.shape[1] / piece_inner_size)
-    img_padded_h = max_row * piece_inner_size
-    img_padded_w = max_col * piece_inner_size
+    max_row = ceil(img.shape[0] / tile_inner_size)
+    max_col = ceil(img.shape[1] / tile_inner_size)
+    img_padded_h = max_row * tile_inner_size
+    img_padded_w = max_col * tile_inner_size
     pad_t = floor((img_padded_h - img.shape[0]) / 2)
     pad_b = img_padded_h - img.shape[0] - pad_t
     pad_l = floor((img_padded_w - img.shape[1]) / 2)
@@ -78,44 +78,42 @@ def get_pieces(img, piece_inner_size, pad_size, *, wrap_x=False, wrap_y=False):
         "wrap" if wrap_x else "reflect",
     )
 
-    pieces = []
+    tiles = []
     for i in range(max_row):
         for j in range(max_col):
-            idx_t = i * piece_inner_size
-            idx_b = idx_t + piece_outer_size
-            idx_l = j * piece_inner_size
-            idx_r = idx_l + piece_outer_size
-            pieces.append(img_full[idx_t:idx_b, idx_l:idx_r, :])
-    pieces = np.stack(pieces)
+            idx_t = i * tile_inner_size
+            idx_b = idx_t + tile_outer_size
+            idx_l = j * tile_inner_size
+            idx_r = idx_l + tile_outer_size
+            tiles.append(img_full[idx_t:idx_b, idx_l:idx_r, :])
+    tiles = np.stack(tiles)
 
     max_row_col = (max_row, max_col)
     pads = (pad_t, pad_b, pad_l, pad_r)
-    return pieces, max_row_col, pads
+    return tiles, max_row_col, pads
 
 
-def get_batch(pieces, batch_size):
+def get_batch(tiles, batch_size):
     idx = 0
-    while idx < pieces.shape[0]:
-        batch = pieces[idx : idx + batch_size]
+    while idx < tiles.shape[0]:
+        batch = tiles[idx : idx + batch_size]
         batch = batch.transpose(0, 3, 1, 2)
         idx += batch.shape[0]
-        print(f"Piece {idx}/{pieces.shape[0]}")
+        print(f"Tile {idx}/{tiles.shape[0]}")
         yield batch
 
 
-def merge_img(
-    pieces, piece_inner_size, pad_size, max_row_col, pads, scale_shift=(1, 0)
-):
+def merge_img(tiles, tile_inner_size, pad_size, max_row_col, pads, scale_shift=(1, 0)):
     max_row, max_col = max_row_col
     pad_t, pad_b, pad_l, pad_r = pads
     scale, shift = scale_shift
 
-    piece_outer_size = piece_inner_size + pad_size * 2
-    scaled_inner_size = piece_inner_size * scale
-    scaled_outer_size = piece_outer_size * scale
+    tile_outer_size = tile_inner_size + pad_size * 2
+    scaled_inner_size = tile_inner_size * scale
+    scaled_outer_size = tile_outer_size * scale
 
     img = np.empty((max_row * scaled_outer_size, max_col * scaled_outer_size, 3))
-    for idx, piece in enumerate(pieces):
+    for idx, tile in enumerate(tiles):
         i = idx // max_col
         j = idx % max_col
 
@@ -123,13 +121,13 @@ def merge_img(
         idx_b = idx_t + scaled_inner_size
         idx_l = j * scaled_inner_size
         idx_r = idx_l + scaled_inner_size
-        piece_l = pad_size * scale - shift
-        piece_r = piece_l + scaled_inner_size
-        img[idx_t:idx_b, idx_l:idx_r, :] = piece[piece_l:piece_r, piece_l:piece_r, :]
+        tile_l = pad_size * scale - shift
+        tile_r = tile_l + scaled_inner_size
+        img[idx_t:idx_b, idx_l:idx_r, :] = tile[tile_l:tile_r, tile_l:tile_r, :]
 
     img = img[
-        pad_t * scale : (max_row * piece_inner_size - pad_b) * scale,
-        pad_l * scale : (max_col * piece_inner_size - pad_r) * scale,
+        pad_t * scale : (max_row * tile_inner_size - pad_b) * scale,
+        pad_l * scale : (max_col * tile_inner_size - pad_r) * scale,
         :,
     ]
     return img

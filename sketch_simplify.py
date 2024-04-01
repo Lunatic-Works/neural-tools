@@ -3,7 +3,7 @@
 import numpy as np
 import skimage.color
 
-from utils import do_imgs, get_batch, get_pieces, merge_img, read_img, write_img
+from utils import do_imgs, get_batch, get_tiles, merge_img, read_img, write_img
 
 model_filename = "./models/sketch_simplify/sketch_gan.onnx"
 in_filenames = [
@@ -11,7 +11,7 @@ in_filenames = [
 ]
 out_suffix = "_simplify"
 
-piece_inner_size = 144
+tile_inner_size = 144
 pad_size = 24
 batch_size = 135
 
@@ -25,16 +25,16 @@ def convert_img(sess, in_filename, out_filename):
     img = img[:, :, None]
     img = (img - 1) * gain + 1
 
-    pieces, max_row_col, pads = get_pieces(img, piece_inner_size, pad_size)
+    tiles, max_row_col, pads = get_tiles(img, tile_inner_size, pad_size)
 
-    out_pieces = []
-    for batch in get_batch(pieces, batch_size):
+    out_tiles = []
+    for batch in get_batch(tiles, batch_size):
         out_batch = sess.run(None, {"in": batch})[0]
         out_batch = out_batch.transpose(0, 2, 3, 1)
-        out_pieces.append(out_batch)
-    out_pieces = np.concatenate(out_pieces)
+        out_tiles.append(out_batch)
+    out_tiles = np.concatenate(out_tiles)
 
-    out_img = merge_img(out_pieces, piece_inner_size, pad_size, max_row_col, pads)
+    out_img = merge_img(out_tiles, tile_inner_size, pad_size, max_row_col, pads)
 
     write_img(out_filename, out_img, signed=False, output_8_bit=output_8_bit)
 

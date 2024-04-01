@@ -8,7 +8,7 @@ from utils import (
     do_imgs,
     floor_even,
     get_batch,
-    get_pieces,
+    get_tiles,
     merge_img,
     read_img,
     trim_img,
@@ -24,7 +24,7 @@ in_filenames = [
 # out_suffix = "_conservative"
 out_suffix = "_denoise3x"
 
-piece_inner_size = 192
+tile_inner_size = 192
 pad_size = 32
 up_scale = 2
 up_shift = 0
@@ -53,19 +53,19 @@ if trim_alpha or run_alpha:
 
 
 def run_img(sess, img):
-    pieces, max_row_col, pads = get_pieces(
-        img, piece_inner_size, pad_size, wrap_x=wrap_x, wrap_y=wrap_y
+    tiles, max_row_col, pads = get_tiles(
+        img, tile_inner_size, pad_size, wrap_x=wrap_x, wrap_y=wrap_y
     )
 
-    out_pieces = []
-    for batch in get_batch(pieces, batch_size):
+    out_tiles = []
+    for batch in get_batch(tiles, batch_size):
         out_batch = sess.run(None, {"in": batch})[0]
         out_batch = out_batch.transpose(0, 2, 3, 1)
-        out_pieces.append(out_batch)
-    out_pieces = np.concatenate(out_pieces)
+        out_tiles.append(out_batch)
+    out_tiles = np.concatenate(out_tiles)
 
     out_img = merge_img(
-        out_pieces, piece_inner_size, pad_size, max_row_col, pads, (up_scale, up_shift)
+        out_tiles, tile_inner_size, pad_size, max_row_col, pads, (up_scale, up_shift)
     )
     return out_img
 
