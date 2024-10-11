@@ -24,8 +24,10 @@ in_filenames = [
 # out_suffix = "_conservative"
 out_suffix = "_denoise3x"
 
+# tile_inner_size = 137
+# tile_inner_size = 167
 tile_inner_size = 192
-pad_size = 32
+pad_size = 64
 up_scale = 2
 up_shift = 0
 batch_size = 4

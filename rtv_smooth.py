@@ -1,7 +1,5 @@
 import numpy as np
 from numba import njit, prange
-from scipy.sparse import dia_array
-from scipy.sparse.linalg import bicgstab
 from skimage.color import rgb2xyz
 from skimage.filters import gaussian
 
@@ -11,7 +9,7 @@ def cross_sum(a, out):
     out[:] = a[2:, 1:-1] + a[:-2, 1:-1] + a[1:-1, 2:] + a[1:-1, :-2]
 
 
-@njit
+@njit(nogil=True, parallel=True)
 def cross_sum_unroll(a, out, mask):
     for i in prange(1, a.shape[0] - 1):
         for j in range(1, a.shape[1] - 1):
@@ -82,7 +80,7 @@ def cross_sum_unroll(a, out, mask):
         out[i, j] += a[i, j - 1]
 
 
-def tv_smooth(img, mask, max_iter=10**3, tol=1e-6):
+def tv_smooth(img, mask, max_iter=10**3, tol=1e-3):
     assert mask.ndim == 2
     mask_0 = mask[:, :, None]
     mask = mask_0.astype(img.dtype)
@@ -97,6 +95,7 @@ def tv_smooth(img, mask, max_iter=10**3, tol=1e-6):
         img_new = np.where(mask_0, img, img_new)
 
         norm = ((img_new - img) ** 2).max()
+        print(f"{_} {norm:.3g}")
         if norm < tol:
             break
 
@@ -134,9 +133,15 @@ def compute_texture_weights(img, sigma, sharpness=0.02, sharpness_lf=1e-3):
 
 
 def solve_img(img, uwx, uwy, lam=0.01):
+    import cupy as cp
+    from cupyx.scipy.sparse import csr_matrix as cp_csr_array
+    from cupyx.scipy.sparse.linalg import cg as cp_cg
+    from scipy.sparse import dia_array
+
     H, W, C = img.shape
     size = H * W
 
+    print("Begin building A")
     e = np.pad(uwx, ((0, 1), (0, 0)))
     e = -lam * e.flatten()
     w = np.pad(e[:-W], ((W, 0),))
@@ -147,12 +152,21 @@ def solve_img(img, uwx, uwy, lam=0.01):
     A = dia_array(([d, s, n, e, w], [0, -1, 1, -W, W]), shape=(size, size))
     A = A.tocsr()
 
+    A = cp_csr_array(A)
+    print("End building A")
+
     out = np.empty_like(img)
     for i in range(C):
         b = img[:, :, i].flatten()
-        x, info = bicgstab(A, b, tol=1e-2, atol=1e-2, maxiter=10**3)
+
+        print("Begin solve")
+        b = cp.asarray(b)
+        x, info = cp_cg(A, b, tol=1e-3, atol=1e-3, maxiter=10**3)
         if info != 0:
             print("info", info)
+        x = cp.asnumpy(x)
+        print("End solve")
+
         out[:, :, i] = x.reshape((H, W))
 
     return out
@@ -162,7 +176,10 @@ def rtv_smooth(img, sigma=3, max_iter=10, tol=1e-4):
     for i in range(max_iter):
         print("rtv_smooth", i)
 
+        print("Begin compute_texture_weights")
         uwx, uwy = compute_texture_weights(img, sigma)
+        print("End compute_texture_weights")
+
         img_new = solve_img(img, uwx, uwy)
 
         norm = ((img_new - img) ** 2).mean()

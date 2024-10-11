@@ -12,8 +12,9 @@ in_filenames = [
 ]
 out_suffix = "_simplify"
 
-# scale = 0.25
-scale = (540, 960)
+scale = None
+# scale = 0.5
+# scale = (540, 960)
 erase_ratio = 0.5
 max_iter = 1
 output_8_bit = False

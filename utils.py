@@ -7,7 +7,7 @@ from math import ceil, floor
 import cv2
 import numpy as np
 import skimage
-from numba import njit
+from numba import njit, prange
 
 
 def floor_even(x):
@@ -140,80 +140,92 @@ def randomize(img, n_bins):
 
 
 # Inplace
-@njit
-def quantize(img, n_bins):
-    H, W, C = img.shape
+@njit(nogil=True)
+def _quantize(img, n_bins, k, H, W):
     for i in range(H):
         for j in range(W):
-            for k in range(C):
-                x0 = img[i, j, k]
-                x = round(x0 * n_bins) / n_bins
-                x = min(max(x, 0), 1)
-                r = x0 - x
-                img[i, j, k] = x
+            x0 = img[i, j, k]
+            x = round(x0 * n_bins) / n_bins
+            x = min(max(x, 0), 1)
+            r = x0 - x
+            img[i, j, k] = x
 
-                # Do not dither alpha
-                if k == 3:
-                    continue
+            # Do not dither alpha
+            if k == 3:
+                continue
 
-                if i == H - 1:
-                    if j < W - 1:
-                        img[i, j + 1, k] += r
+            if i == H - 1:
+                if j < W - 1:
+                    img[i, j + 1, k] += r
+            else:
+                if j == 0:
+                    img[i, j + 1, k] += r / 2
+                    img[i + 1, j, k] += r / 2
+                elif j == W - 1:
+                    img[i + 1, j - 1, k] += r / 2
+                    img[i + 1, j, k] += r / 2
                 else:
-                    if j == 0:
-                        img[i, j + 1, k] += r / 2
-                        img[i + 1, j, k] += r / 2
-                    elif j == W - 1:
-                        img[i + 1, j - 1, k] += r / 2
-                        img[i + 1, j, k] += r / 2
-                    else:
-                        img[i, j + 1, k] += r / 2
-                        img[i + 1, j - 1, k] += r / 4
-                        img[i + 1, j, k] += r / 4
+                    img[i, j + 1, k] += r / 2
+                    img[i + 1, j - 1, k] += r / 4
+                    img[i + 1, j, k] += r / 4
 
 
 # Inplace
-@njit
-def quantize_adapt(img):
+@njit(nogil=True, parallel=True)
+def quantize(img, n_bins):
     H, W, C = img.shape
+    for k in prange(C):
+        _quantize(img, n_bins, k, H, W)
+
+
+# Inplace
+@njit(nogil=True)
+def _quantize_adapt(img, k, H, W):
     for i in range(H):
         for j in range(W):
-            for k in range(C):
-                x0 = img[i, j, k]
-                if x0 > 0.5:
-                    n_bins = 15
-                elif x0 > 0.25:
-                    n_bins = 31
-                elif x0 > 0.125:
-                    n_bins = 63
-                elif x0 > 0.0625:
-                    n_bins = 127
-                elif x0 > 0.03125:
-                    n_bins = 255
+            x0 = img[i, j, k]
+            if x0 > 0.5:
+                n_bins = 15
+            elif x0 > 0.25:
+                n_bins = 31
+            elif x0 > 0.125:
+                n_bins = 63
+            elif x0 > 0.0625:
+                n_bins = 127
+            elif x0 > 0.03125:
+                n_bins = 255
 
-                x = round(x0 * n_bins) / n_bins
-                x = min(max(x, 0), 1)
-                r = x0 - x
-                img[i, j, k] = x
+            x = round(x0 * n_bins) / n_bins
+            x = min(max(x, 0), 1)
+            r = x0 - x
+            img[i, j, k] = x
 
-                # Do not dither alpha
-                if k == 3:
-                    continue
+            # Do not dither alpha
+            if k == 3:
+                continue
 
-                if i == H - 1:
-                    if j < W - 1:
-                        img[i, j + 1, k] += r
+            if i == H - 1:
+                if j < W - 1:
+                    img[i, j + 1, k] += r
+            else:
+                if j == 0:
+                    img[i, j + 1, k] += r / 2
+                    img[i + 1, j, k] += r / 2
+                elif j == W - 1:
+                    img[i + 1, j - 1, k] += r / 2
+                    img[i + 1, j, k] += r / 2
                 else:
-                    if j == 0:
-                        img[i, j + 1, k] += r / 2
-                        img[i + 1, j, k] += r / 2
-                    elif j == W - 1:
-                        img[i + 1, j - 1, k] += r / 2
-                        img[i + 1, j, k] += r / 2
-                    else:
-                        img[i, j + 1, k] += r / 2
-                        img[i + 1, j - 1, k] += r / 4
-                        img[i + 1, j, k] += r / 4
+                    img[i, j + 1, k] += r / 2
+                    img[i + 1, j - 1, k] += r / 4
+                    img[i + 1, j, k] += r / 4
+
+
+# Inplace
+@njit(nogil=True, parallel=True)
+def quantize_adapt(img):
+    H, W, C = img.shape
+    for k in prange(C):
+        _quantize_adapt(img, k, H, W)
 
 
 def read_img(
@@ -262,7 +274,7 @@ def read_img(
             alpha *= scale
 
     if noise:
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(seed=0)
         img += rng.normal(scale=noise, size=img.shape)
 
     if return_alpha:
@@ -329,7 +341,9 @@ def write_img(
         img = skimage.img_as_uint(img)
 
     print("Encoding...")
-    ret, img = cv2.imencode(os.path.splitext(filename)[1], img)
+    ret, img = cv2.imencode(
+        os.path.splitext(filename)[1], img, [cv2.IMWRITE_PNG_COMPRESSION, 1]
+    )
     assert ret is True
 
     print("Writing...")
