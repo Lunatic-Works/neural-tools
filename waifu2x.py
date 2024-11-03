@@ -23,11 +23,11 @@ in_filenames = [
 ]
 out_suffix = "_waifu2x"
 
-tile_inner_size = 36
-pad_size = 12
+tile_inner_size = 96
+pad_size = 16
 up_scale = 2
 up_shift = 14
-batch_size = 400
+batch_size = 128
 
 pre_blur = 0.5
 pre_darken = False

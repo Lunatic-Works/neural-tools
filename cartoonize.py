@@ -13,8 +13,8 @@ in_filenames = [
 ]
 out_suffix = None
 
-tile_inner_size = 240
-pad_size = 60
+tile_inner_size = 336
+pad_size = 88
 batch_size = 8
 
 swap_rb = False
