@@ -4,7 +4,7 @@ Lunatic Works自用的图形学和神经网络工具合集。
 
 预训练模型：
 * https://mega.nz/folder/4E0zhIjJ#H2-h29LEcRepzCgm0xBWpQ
-* https://pan.baidu.com/s/1VLYJ5ER6-bCF98ybZOvT0g?pwd=ck6r
+* https://pan.baidu.com/s/1XzmHaD52jr8Cp_H18AubNw?pwd=vb5t
 
 所有模型只保留inference部分，以ONNX格式保存。
 
