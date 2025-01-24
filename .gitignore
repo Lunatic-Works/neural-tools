@@ -1,4 +1,5 @@
 *.pyc
 /models/
+/tensorrt_cache/
 /zi2zi/out/
 __pycache__
