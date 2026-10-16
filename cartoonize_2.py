@@ -6,7 +6,10 @@ import skimage.transform
 from utils import do_imgs, get_batch, get_tiles, merge_img, read_img, write_img
 
 model_filenames = [
-    "./models/cartoonize_2/danbooru.onnx",
+    "./models/cartoonize_2/danbooru_13.onnx",
+    "./models/cartoonize_2/danbooru_16.onnx",
+    "./models/cartoonize_2/loundraw_2.onnx",
+    "./models/cartoonize_2/loundraw_10.onnx",
 ]
 in_filenames = [
     "./in.png",

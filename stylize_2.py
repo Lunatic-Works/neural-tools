@@ -4,7 +4,9 @@ import numpy as np
 
 from utils import do_imgs, get_batch, get_tiles, merge_img, read_img, write_img
 
-model_filename = "./models/stylize_2/cezanne.onnx"
+# model_filename = "./models/stylize_2/cezanne.onnx"
+# model_filename = "./models/stylize_2/monet.onnx"
+model_filename = "./models/stylize_2/van_gogh.onnx"
 in_filenames = [
     "./in.png",
 ]
@@ -16,13 +18,18 @@ batch_size = 12
 
 swap_rb = False
 noise = 0.01
+wrap_x = False
+wrap_y = False
+output_png = True
 output_8_bit = False
 
 
 def convert_img(sess, in_filename, out_filename):
     img = read_img(in_filename, swap_rb=swap_rb, signed=False, noise=noise)
 
-    tiles, max_row_col, pads = get_tiles(img, tile_inner_size, pad_size)
+    tiles, max_row_col, pads = get_tiles(
+        img, tile_inner_size, pad_size, wrap_x=wrap_x, wrap_y=wrap_y
+    )
 
     out_tiles = []
     for batch in get_batch(tiles, batch_size):
@@ -44,5 +51,5 @@ if __name__ == "__main__":
         model_filename,
         in_filenames,
         out_suffix=out_suffix,
-        out_extname=None if output_8_bit else ".png",
+        out_extname=".png" if output_png or not output_8_bit else None,
     )

@@ -16,12 +16,17 @@ from utils import (
     write_img,
 )
 
-model_filename = "./models/waifu2x/noise0_scale2x.onnx"
-# model_filename = "./models/waifu2x/noise3_scale2x.onnx"
+# model_filename = "./models/waifu2x/noise0_scale2x.onnx"
+# model_filename = "./models/waifu2x/noise1_scale2x.onnx"
+# model_filename = "./models/waifu2x/noise2_scale2x.onnx"
+model_filename = "./models/waifu2x/noise3_scale2x.onnx"
 in_filenames = [
     "./in.png",
 ]
-out_suffix = "_waifu2x"
+# out_suffix = "_waifu2x_noise0"
+# out_suffix = "_waifu2x_noise1"
+# out_suffix = "_waifu2x_noise2"
+out_suffix = "_waifu2x_noise3"
 
 tile_inner_size = 96
 pad_size = 16
@@ -29,7 +34,7 @@ up_scale = 2
 up_shift = 14
 batch_size = 128
 
-pre_blur = 0.5
+pre_blur = 0
 pre_darken = False
 pre_lighten = False
 # pre_blur = 1
@@ -45,7 +50,8 @@ wrap_x = False
 wrap_y = False
 output_gray = False
 output_alpha = False
-output_8_bit = True
+output_png = True
+output_8_bit = False
 
 if trim_alpha or run_alpha:
     assert output_alpha
@@ -165,5 +171,5 @@ if __name__ == "__main__":
         model_filename,
         in_filenames,
         out_suffix=out_suffix,
-        out_extname=None if output_8_bit else ".png",
+        out_extname=".png" if output_png or not output_8_bit else None,
     )

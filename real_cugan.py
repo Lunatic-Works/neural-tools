@@ -17,11 +17,13 @@ from utils import (
 )
 
 # model_filename = "./models/real_cugan/up2x_latest_conservative.onnx"
+# model_filename = "./models/real_cugan/up2x_latest_no_denoise.onnx"
 model_filename = "./models/real_cugan/up2x_latest_denoise3x.onnx"
 in_filenames = [
     "./in.png",
 ]
 # out_suffix = "_conservative"
+# out_suffix = "_no_denoise"
 out_suffix = "_denoise3x"
 
 tile_inner_size = 176
@@ -30,7 +32,8 @@ up_scale = 2
 up_shift = 0
 batch_size = 16
 
-pre_blur = 0.5
+pre_blur = 0
+# pre_blur = 0.5
 pre_darken = False
 pre_lighten = False
 # pre_blur = 1
@@ -40,12 +43,15 @@ trim_alpha = False
 trim_eps = 1e-3
 upscale = True
 downscale = True
+# upscale = False
+# downscale = False
 run_alpha = False
 alpha_gamma = 1
 wrap_x = False
 wrap_y = False
 output_gray = False
 output_alpha = False
+output_png = True
 output_8_bit = True
 
 if trim_alpha or run_alpha:
@@ -164,5 +170,5 @@ if __name__ == "__main__":
         model_filename,
         in_filenames,
         out_suffix=out_suffix,
-        out_extname=None if output_8_bit else ".png",
+        out_extname=".png" if output_png or not output_8_bit else None,
     )

@@ -12,12 +12,14 @@ in_filenames = [
     "./in.png",
 ]
 out_suffix = None
+# out_suffix = "_shinkai_rb"
 
 tile_inner_size = 336
 pad_size = 88
 batch_size = 8
 
 swap_rb = False
+# swap_rb = True
 noise = 0.01
 scale = None
 run_size = None

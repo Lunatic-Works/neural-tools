@@ -14,9 +14,12 @@ out_suffix = "_simplify"
 
 scale = None
 # scale = 0.5
+# scale = (2160, 3840)
+# scale = (1080, 1920)
 # scale = (540, 960)
 erase_ratio = 0.5
 max_iter = 1
+output_png = True
 output_8_bit = False
 save_mask = False
 
@@ -78,5 +81,5 @@ if __name__ == "__main__":
         None,
         in_filenames,
         out_suffix=out_suffix,
-        out_extname=None if output_8_bit else ".png",
+        out_extname=".png" if output_png or not output_8_bit else None,
     )

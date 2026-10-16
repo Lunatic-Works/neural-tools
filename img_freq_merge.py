@@ -26,7 +26,7 @@ def main():
     img_1 += strength * img_3
     img_1 = np.clip(img_1, 0, 1)
 
-    write_img(out_filename, img_1, swap_rb=True, signed=False)
+    write_img(out_filename, img_1, swap_rb=True, signed=False, output_8_bit=False)
 
 
 if __name__ == "__main__":

@@ -16,6 +16,7 @@ batch_size = 12
 
 swap_rb = False
 noise = 0.01
+output_png = True
 output_8_bit = False
 
 
@@ -49,5 +50,5 @@ if __name__ == "__main__":
         model_filename,
         in_filenames,
         out_suffix=out_suffix,
-        out_extname=None if output_8_bit else ".png",
+        out_extname=".png" if output_png or not output_8_bit else None,
     )

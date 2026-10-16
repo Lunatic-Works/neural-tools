@@ -295,6 +295,10 @@ def write_img(
     output_8_bit=True,
     quant_bit=0,
 ):
+    img = img.astype(np.float32)
+    if alpha is not None:
+        alpha = alpha.astype(np.float32)
+
     if scale is not None:
         img /= scale
         if alpha is not None:
