@@ -12,10 +12,11 @@ in_filenames = [
 out_suffix = "_simplify"
 
 tile_inner_size = 144
-pad_size = 24
-batch_size = 135
+pad_size = 96
+align = 8
+batch_size = 32
 
-gain = 10
+gain = 1
 output_png = True
 output_8_bit = False
 
@@ -26,7 +27,7 @@ def convert_img(sess, in_filename, out_filename):
     img = img[:, :, None]
     img = (img - 1) * gain + 1
 
-    tiles, max_row_col, pads = get_tiles(img, tile_inner_size, pad_size)
+    tiles, max_row_col, pads = get_tiles(img, tile_inner_size, pad_size, align=align)
 
     out_tiles = []
     for batch in get_batch(tiles, batch_size):

@@ -28,8 +28,8 @@ in_filenames = [
 # out_suffix = "_waifu2x_noise2"
 out_suffix = "_waifu2x_noise3"
 
-tile_inner_size = 96
-pad_size = 16
+tile_inner_size = 112
+pad_size = 8
 up_scale = 2
 up_shift = 14
 batch_size = 128
