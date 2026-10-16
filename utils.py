@@ -354,6 +354,29 @@ def write_img(
     img.tofile(filename)
 
 
+def create_session(model_filename):
+    import onnxruntime as rt
+
+    trt_ep_options = {
+        "trt_max_workspace_size": 16 * 1024**3,
+        "trt_fp16_enable": True,
+        "trt_engine_cache_enable": True,
+        "trt_engine_cache_path": "./",  # Appended after trt_ep_context_file_path
+        "trt_timing_cache_enable": True,
+        "trt_timing_cache_path": "./tensorrt_cache",
+        "trt_dump_ep_context_model": True,
+        "trt_ep_context_file_path": "./tensorrt_cache",
+    }
+    return rt.InferenceSession(
+        model_filename,
+        providers=[
+            ("TensorrtExecutionProvider", trt_ep_options),
+            "CUDAExecutionProvider",
+            "CPUExecutionProvider",
+        ],
+    )
+
+
 def do_imgs(
     fun,
     model_filenames,
@@ -382,27 +405,8 @@ def do_imgs(
 
     for model_filename in model_filenames:
         if model_filename:
-            import onnxruntime as rt
-
             print(model_filename)
-            trt_ep_options = {
-                "trt_max_workspace_size": 16 * 1024**3,
-                "trt_fp16_enable": True,
-                "trt_engine_cache_enable": True,
-                "trt_engine_cache_path": "./",  # Appended after trt_ep_context_file_path
-                "trt_timing_cache_enable": True,
-                "trt_timing_cache_path": "./tensorrt_cache",
-                "trt_dump_ep_context_model": True,
-                "trt_ep_context_file_path": "./tensorrt_cache",
-            }
-            sess = rt.InferenceSession(
-                model_filename,
-                providers=[
-                    ("TensorrtExecutionProvider", trt_ep_options),
-                    "CUDAExecutionProvider",
-                    "CPUExecutionProvider",
-                ],
-            )
+            sess = create_session(model_filename)
 
             if out_suffix is None:
                 _out_suffix = (
