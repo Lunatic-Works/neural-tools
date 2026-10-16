@@ -56,7 +56,25 @@ def untrim_img(img, alpha, original_shape, trims):
     return new_img, new_alpha
 
 
-def get_tiles(img, tile_inner_size, pad_size, *, wrap_x=False, wrap_y=False):
+def align_pad(pad_lo, pad_hi, pad_size, align=4):
+    """Move the leading padding so that (pad_lo + pad_size) is a multiple of align.
+
+    Models with two stride-2 layers evaluate a tile on the same sampling grid as
+    the whole image only when the leading padding is a multiple of 4 (the tile
+    offsets tile_inner_size are assumed to be aligned as well). The trailing
+    padding keeps the total padding unchanged.
+    """
+    if align <= 1:
+        return pad_lo, pad_hi
+    total = pad_lo + pad_hi
+    target = (-pad_size) % align
+    lo = pad_lo - (pad_lo - target) % align
+    if lo < 0:
+        lo = target if target <= total else pad_lo
+    return lo, total - lo
+
+
+def get_tiles(img, tile_inner_size, pad_size, *, wrap_x=False, wrap_y=False, align=4):
     tile_outer_size = tile_inner_size + pad_size * 2
 
     max_row = ceil(img.shape[0] / tile_inner_size)
@@ -67,6 +85,8 @@ def get_tiles(img, tile_inner_size, pad_size, *, wrap_x=False, wrap_y=False):
     pad_b = img_padded_h - img.shape[0] - pad_t
     pad_l = floor((img_padded_w - img.shape[1]) / 2)
     pad_r = img_padded_w - img.shape[1] - pad_l
+    pad_t, pad_b = align_pad(pad_t, pad_b, pad_size, align)
+    pad_l, pad_r = align_pad(pad_l, pad_r, pad_size, align)
     img_full = np.pad(
         img,
         [(pad_t + pad_size, pad_b + pad_size), (0, 0), (0, 0)],
