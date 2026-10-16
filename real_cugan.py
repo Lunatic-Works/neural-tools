@@ -27,7 +27,7 @@ in_filenames = [
 out_suffix = "_denoise3x"
 
 tile_inner_size = 176
-pad_size = 40
+pad_size = 20
 up_scale = 2
 up_shift = 0
 batch_size = 16

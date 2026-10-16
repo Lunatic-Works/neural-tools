@@ -15,7 +15,7 @@ out_suffix = None
 # out_suffix = "_shinkai_rb"
 
 tile_inner_size = 336
-pad_size = 88
+pad_size = 72
 batch_size = 8
 
 swap_rb = False
