@@ -161,7 +161,7 @@ def solve_img(img, uwx, uwy, lam=0.01):
 
         print("Begin solve")
         b = cp.asarray(b)
-        x, info = cp_cg(A, b, tol=1e-3, atol=1e-3, maxiter=10**3)
+        x, info = cp_cg(A, b, rtol=1e-3, atol=1e-3, maxiter=10**3)
         if info != 0:
             print("info", info)
         x = cp.asnumpy(x)
